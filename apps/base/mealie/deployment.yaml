@@ -26,9 +26,9 @@ spec:
           securityContext:
             allowPrivilegeEscalation: false
 
-         volumeMounts:
-           - name: mealie-data
-             mountPath: /app/data
+          volumeMounts:
+            - name: mealie-data
+              mountPath: /app/data
       volumes:
         - name: mealie-data
           persistentVolumeClaim:
