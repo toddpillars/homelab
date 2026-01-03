@@ -16,11 +16,13 @@ spec:
         fsGroup: 33 # www-data group ID
         runAsUser: 33 # www-data user ID
         runAsGroup: 33 # www-data group ID
-        containers:
+
+      containers:
         - name: linkding
           image: sissbruecker/linkding:1.44.2
           ports:
             - containerPort: 9090
+
           securityContext:
             allowPrivilegeEscalation: false
 
