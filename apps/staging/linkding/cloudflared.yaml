@@ -38,6 +38,10 @@ spec:
             - --metrics
             - 0.0.0.0:2000
             - run
+          volumeMounts:
+            - name: config
+              mountPath: /etc/cloudflared
+              readOnly: true
           livenessProbe:
             httpGet:
               # Cloudflared has a /ready endpoint which returns 200 if and only if
@@ -47,6 +51,10 @@ spec:
             failureThreshold: 1
             initialDelaySeconds: 10
             periodSeconds: 10
+      volumes:
+        - name: config
+          configMap:
+            name: cloudflared
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -54,9 +62,8 @@ metadata:
   name: cloudflared
 data:
   config.yaml: |
-#    tunnel: f7897851-6b1b-48af-9490-7739f9f17863
-     tunnel: ldku
-     ingress:
-       - hostname: links.toddpillars.com
-         service: http://linkding:9090
-       - service: http_status:404
+    tunnel: ldku
+    ingress:
+      - hostname: links.toddpillars.com
+        service: http://linkding:9090
+      - service: http_status:404
