@@ -1,8 +1,8 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: cloudflared-deployment
-  namespace: default
+  name: cloudflared
+#  namespace: default
 spec:
   replicas: 2
   selector:
