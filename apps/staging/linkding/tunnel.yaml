@@ -27,7 +27,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: tunnel-credentials
-                  key: token
+                  key: f7897851-6b1b-48af-9490-7739f9f17863.json
           command:
             # Configures tunnel run parameters
             - cloudflared
