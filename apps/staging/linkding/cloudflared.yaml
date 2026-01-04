@@ -56,8 +56,7 @@ data:
   config.yaml: |
 #    tunnel: f7897851-6b1b-48af-9490-7739f9f17863
      tunnel: ldku
-
-    ingress:
-      - hostname: links.toddpillars.com
-        service: http://linkding:9090
-      - service: http_status:404
+     ingress:
+       - hostname: links.toddpillars.com
+         service: http://linkding:9090
+       - service: http_status:404
