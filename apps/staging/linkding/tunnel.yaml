@@ -46,3 +46,17 @@ spec:
             failureThreshold: 1
             initialDelaySeconds: 10
             periodSeconds: 10
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloudflared
+  namespace: linkding
+data:
+  config.yaml: |
+    tunnel: f7897851-6b1b-48af-9490-7739f9f17863
+
+    ingress:
+      - hostname: linkding.toddpillars.com
+        service: http://linkding:9090
+      - service: http_status:404
