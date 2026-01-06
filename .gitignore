@@ -1,0 +1,8 @@
+# Ignore temporary files
+**/*.tmp
+
+# Ignore log files
+*.log
+
+# Ingore .sops.yamal
+.sops.yaml
