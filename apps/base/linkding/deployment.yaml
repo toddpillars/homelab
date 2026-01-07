@@ -20,17 +20,16 @@ spec:
       containers:
         - name: linkding
           image: sissbruecker/linkding:1.44.2
-          ports:
-            - containerPort: 9090
-
-          envFrom:
-#            - configMapRef:
-#              name: linkding-configmap
-            - secretRef:
-              name: linkding-container-env
 
           securityContext:
             allowPrivilegeEscalation: false
+
+          envFrom:
+            - secretRef:
+              name: linkding-container-env
+
+          ports:
+            - containerPort: 9090
 
           volumeMounts:
             - name: linkding-data
