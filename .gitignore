@@ -4,5 +4,7 @@
 # Ignore log files
 *.log
 
-# Ingore .sops.yamal
-.sops.yaml
+# Ignore anything .key
+*.agekey
+age.key
+*.key
