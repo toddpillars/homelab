@@ -66,4 +66,6 @@ data:
     ingress:
       - hostname: links.toddpillars.com
         service: http://linkding:9090
+      - hostname: homarr.toddpillars.com
+        service: http://homarr.homarr.svc.cluster.local:7575
       - service: http_status:404
