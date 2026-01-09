@@ -26,12 +26,11 @@ spec:
         size: 1Gi
     resources:
       limits:
-        memory: 512Mi
-        cpu: 500m
+        memory: 1Gi
+        cpu: 1000m
       requests:
-        memory: 256Mi
-        cpu: 100m
-    # Adjust probes for slower startup
+        memory: 512Mi
+        cpu: 200m
     livenessProbe:
       initialDelaySeconds: 60
       periodSeconds: 10
