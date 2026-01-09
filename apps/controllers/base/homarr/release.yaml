@@ -31,6 +31,17 @@ spec:
       requests:
         memory: 256Mi
         cpu: 100m
+    # Adjust probes for slower startup
+    livenessProbe:
+      initialDelaySeconds: 60
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 5
+    readinessProbe:
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 3
   install:
     createNamespace: false
     remediation:
