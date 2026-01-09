@@ -446,3 +446,42 @@ kubectl delete namespace backup-test
 - [Cluster Migration Guide](../troubleshooting/cluster-migration.md)
 - [GitOps Setup](../guides/gitops-setup.md)
 - [Velero Documentation](https://velero.io/docs/)
+
+## Linkding Superuser
+
+Linkding automatically creates a superuser on first startup using environment variables from the `linkding-container-env` secret:
+
+- **Username**: Defined in `LD_SUPERUSER_NAME`
+- **Password**: Defined in `LD_SUPERUSER_PASSWORD`
+
+The secret is:
+- Encrypted with SOPS in `apps/staging/linkding/linkding-secret.enc.yaml`
+- Automatically decrypted by Flux on deployment
+- Referenced in deployment via `envFrom`
+
+**To change credentials:**
+
+1. Edit the encrypted secret:
+```bash
+   sops apps/staging/linkding/linkding-secret.enc.yaml
+```
+
+2. Update the values (they're base64 encoded):
+```bash
+   echo -n "newusername" | base64
+   echo -n "newpassword" | base64
+```
+
+3. Commit and push:
+```bash
+   git add apps/staging/linkding/linkding-secret.enc.yaml
+   git commit -m "Update Linkding superuser credentials"
+   git push
+```
+
+4. Restart Linkding (only needed if changing on existing deployment):
+```bash
+   kubectl rollout restart deployment/linkding -n linkding
+```
+
+**Note**: The superuser is only created on initial database setup. If the database already exists, changing these values won't update the existing user.
