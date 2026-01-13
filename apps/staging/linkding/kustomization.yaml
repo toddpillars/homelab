@@ -5,3 +5,4 @@ resources:
   - ../../base/linkding
 #  - cloudflared.yaml
   - linkding-secret.enc.yaml
+  - ingress.yaml
