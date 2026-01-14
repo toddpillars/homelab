@@ -9,3 +9,6 @@
 age.key
 *.key
 backups/
+
+# Ignore certs
+.tls/
