@@ -31,3 +31,22 @@ spec:
         existingSecret: grafana-admin-credentials
         userKey: admin-user
         passwordKey: admin-password
+      persistence:
+        enabled: true
+        type: pvc
+        storageClassName: local-path
+        size: 2Gi
+        accessModes:
+          - ReadWriteOnce
+      ingress:
+        enabled: true
+        ingressClassName: traefik
+        hosts:
+          - grs.toddpillars.com
+        ## TLS configuration for grafana Ingress
+        ## Secret must be manually created in the namespace
+        ##
+        tls: []
+        # - secretName: grafana-general-tls
+        #   hosts:
+        #   - grafana.example.com
