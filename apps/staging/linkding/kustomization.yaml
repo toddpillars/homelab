@@ -3,5 +3,6 @@ kind: Kustomization
 namespace: linkding
 resources:
   - ../../base/linkding
-  - cloudflared.yaml
+#  - cloudflared.yaml
   - linkding-secret.enc.yaml
+  - ingress.yaml
