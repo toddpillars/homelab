@@ -3,14 +3,9 @@ kind: Service
 metadata:
   name: homarr
   namespace: homarr
-  app: homarr
 spec:
   selector:
-    app.kubernetes.io/name: homarr
-    app.kubernetes.io/instance: homarr
+    app: homarr
   ports:
-    - name: http
-      port: 7575
-      targetPort: 7575
-      protocol: TCP
+    - port: 7575
   type: ClusterIP
