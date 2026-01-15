@@ -4,5 +4,4 @@ resources:
   - namespace.yaml
   - deployment.yaml
   - storage.yaml
-  - service.yaml
   - tunnel-secret.enc.yaml
