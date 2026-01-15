@@ -64,8 +64,8 @@ data:
     credentials-file: /etc/cloudflared/credentials.json
 
     ingress:
-      - hostname: links.toddpillars.com
+      - hostname: lds.toddpillars.com
         service: http://linkding:9090
-      - hostname: homarr.toddpillars.com
+      - hostname: hms.toddpillars.com
         service: http://homarr.homarr.svc.cluster.local:7575
       - service: http_status:404
