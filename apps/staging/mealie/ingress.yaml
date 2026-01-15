@@ -1,18 +1,18 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: homarr
-  namespace: homarr
+  name: mealie
+  namespace: mealie
 spec:
   ingressClassName: traefik
   rules:
-    - host: hms.toddpillars.com
+    - host: mls.toddpillars.com
       http:
         paths:
           - backend:
               service:
-                name: homarr
+                name: mealie
                 port:
-                  number: 7575
+                  number: 9000
             path: /
             pathType: Prefix
