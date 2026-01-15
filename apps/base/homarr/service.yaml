@@ -3,11 +3,11 @@ kind: Service
 metadata:
   name: homarr
   namespace: homarr
+  app: homarr
 spec:
   selector:
-    app: homarr
-    # app.kubernetes.io/name: homarr
-    # app.kubernetes.io/instance: homarr
+    app.kubernetes.io/name: homarr
+    app.kubernetes.io/instance: homarr
   ports:
     - name: http
       port: 7575
