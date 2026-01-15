@@ -5,7 +5,7 @@ metadata:
 spec:
   ingressClassName: traefik
   rules:
-    - host: lds.toddpillars.com
+    - host: hms.toddpillars.com
       http:
         paths:
           - backend:
