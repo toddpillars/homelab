@@ -3,4 +3,4 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - db-encryption-secret.enc.yaml
-  - storage.yaml
+ # - storage.yaml
