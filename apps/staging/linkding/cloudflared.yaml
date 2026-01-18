@@ -65,5 +65,7 @@ data:
 
     ingress:
       - hostname: lds.toddpillars.com
-        service: http://linkding:9090
+        service: http://linkding.linkding.svc.cluster.local:9090
+      - hostname: audiobookshelf.yourdomain.com
+        service: http://audiobookshelf.audiobookshelf.svc.cluster.local:3005
       - service: http_status:404
