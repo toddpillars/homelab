@@ -1,0 +1,32 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: audiobookshelf-local
+  namespace: audiobookshelf  # adjust to your namespace
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: audiobookshelf-large-upload@kubernetescrd
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: abs.toddpillars.com  # or whatever local hostname you want
+      http:
+        paths:
+          - backend:
+              service:
+                name: audiobookshelf
+                port:
+                  number: 3005  # adjust to your service port
+            path: /
+            pathType: Prefix
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: large-upload
+  namespace: audiobookshelf
+spec:
+  buffering:
+    maxRequestBodyBytes: 5368709120  # 5GB in bytes
+    memRequestBodyBytes: 2097152     # 2MB - buffer in memory before disk
+    maxResponseBodyBytes: 5368709120
+    memResponseBodyBytes: 2097152
