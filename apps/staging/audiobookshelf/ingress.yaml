@@ -8,7 +8,7 @@ metadata:
 spec:
   ingressClassName: traefik
   rules:
-    - host: abs.toddpillars.com  # or whatever local hostname you want
+    - host: absi.toddpillars.com  # or whatever local hostname you want
       http:
         paths:
           - backend:
