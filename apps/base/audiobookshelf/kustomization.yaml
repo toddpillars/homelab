@@ -4,5 +4,5 @@ resources:
   - namespace.yaml
   - deployment.yaml
   - configmap.yaml
-# - storage.yaml
+  - storage.yaml
   - service.yaml
