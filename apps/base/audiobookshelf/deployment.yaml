@@ -12,17 +12,17 @@ spec:
       labels:
         app: audiobookshelf
     spec:
-#     securityContext:
-#       fsGroup: 33 # www-data group ID
-#       runAsUser: 33 # www-data user ID
-#       runAsGroup: 33 # www-data group ID
+      securityContext:
+        fsGroup: 1000
+        runAsUser: 1000
+        runAsGroup: 1000
 
       containers:
         - name: audiobookshelf
           image: advplyr/audiobookshelf:2.32.1
 
-#         securityContext:
-#           allowPrivilegeEscalation: false
+          securityContext:
+            allowPrivilegeEscalation: false
 
           envFrom:
             - configMapRef:
