@@ -30,7 +30,7 @@ spec:
           args:
             - |
               ln -sf /tmp/git/current/public /usr/share/nginx/html
-              nginx -g 'daemon off;
+              nginx -g "daemon off;"
           resources:
             requests:
               memory: "64Mi"
