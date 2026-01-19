@@ -2,16 +2,16 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: cloudflared
-  namespace: linkding
+  namespace: cloudflared
 spec:
   replicas: 2
   selector:
     matchLabels:
-      pod: cloudflared
+      app: cloudflared
   template:
     metadata:
       labels:
-        pod: cloudflared
+        app: cloudflared
     spec:
       securityContext:
         sysctls:
@@ -52,20 +52,3 @@ spec:
         - name: credentials
           secret:
             secretName: tunnel-credentials
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: cloudflared
-  namespace: linkding
-data:
-  config.yaml: |
-    tunnel: f7897851-6b1b-48af-9490-7739f9f17863
-    credentials-file: /etc/cloudflared/credentials.json
-
-    ingress:
-      - hostname: lds.toddpillars.com
-        service: http://linkding.linkding.svc.cluster.local:9090
-      - hostname: abs.toddpillars.com
-        service: http://audiobookshelf.audiobookshelf.svc.cluster.local:3005
-      - service: http_status:404

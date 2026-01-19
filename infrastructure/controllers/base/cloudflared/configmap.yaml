@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloudflared
+  namespace: cloudflared
+data:
+  config.yaml: |
+    tunnel: f7897851-6b1b-48af-9490-7739f9f17863
+    credentials-file: /etc/cloudflared/credentials.json
+
+    ingress:
+      - hostname: lds.toddpillars.com
+        service: http://linkding.linkding.svc.cluster.local:9090
+      - hostname: abs.toddpillars.com
+        service: http://audiobookshelf.audiobookshelf.svc.cluster.local:3005
+      - service: http_status:404
