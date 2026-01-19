@@ -13,6 +13,8 @@ spec:
       labels:
         app: blog
     spec:
+      securityContext:
+        fsGroup: 65533
       containers:
         # Nginx serves the static content
         - name: nginx
