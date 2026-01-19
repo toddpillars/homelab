@@ -39,8 +39,15 @@ spec:
                   }
               }
               EOF
-              nginx -g "daemon off;"
-          resources:
+
+              echo "Waiting for git-sync to populate files..."
+              until [ -f /tmp/git/current/public/index.html ] || [ -f /tmp/git/current/public/index.xml ]; do
+                sleep 2
+              done
+              echo "Files detected, starting nginx"
+
+              exec nginx -g "daemon off;"
+        resources:
             requests:
               memory: "64Mi"
               cpu: "50m"
