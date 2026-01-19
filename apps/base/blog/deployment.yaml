@@ -24,13 +24,21 @@ spec:
               name: http
           volumeMounts:
             - name: html
-              mountPath: /git
+              mountPath: /tmp/git
               readOnly: true
           command: ["/bin/sh", "-c"]
           args:
             - |
-              rm -rf /usr/share/nginx/html
-              ln -sf /git/current/public /usr/share/nginx/html
+              cat > /etc/nginx/conf.d/default.conf <<'EOF'
+              server {
+                  listen 80;
+                  root /tmp/git/current/public;
+                  index index.html index.xml;
+                  location / {
+                      try_files $uri $uri/ =404;
+                  }
+              }
+              EOF
               nginx -g "daemon off;"
           resources:
             requests:
