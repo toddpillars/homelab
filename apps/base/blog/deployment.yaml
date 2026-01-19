@@ -52,6 +52,8 @@ spec:
               value: "true"
             - name: GITSYNC_LINK
               value: "current"
+            - name: GITSYNC_VERBOSE
+              value: "6"
           volumeMounts:
             - name: html
               mountPath: /usr/share/nginx/html
