@@ -80,7 +80,7 @@ spec:
             - name: GITSYNC_VERBOSE
               value: "6"
 
-            volumeMounts:
+          volumeMounts:
             - name: html
               mountPath: /usr/share/nginx/html
               subPath: current/public  # Hugo builds to public/ folder
@@ -99,7 +99,7 @@ spec:
               memory: "64Mi"
               cpu: "50m"
 
-        volumes:
+      volumes:
         - name: html
           emptyDir: {}
         - name: git-secret
