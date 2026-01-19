@@ -24,12 +24,13 @@ spec:
               name: http
           volumeMounts:
             - name: html
-              mountPath: /tmp/git
+              mountPath: /git
               readOnly: true
           command: ["/bin/sh", "-c"]
           args:
             - |
-              ln -sf /tmp/git/current/public /usr/share/nginx/html
+              rm -rf /usr/share/nginx/html
+              ln -sf /git/current/public /usr/share/nginx/html
               nginx -g "daemon off;"
           resources:
             requests:
