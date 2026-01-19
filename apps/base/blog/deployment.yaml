@@ -56,7 +56,7 @@ spec:
               cpu: "100m"
 
         # git-sync keeps content updated
-        name: git-sync
+          name: git-sync
           image: registry.k8s.io/git-sync/git-sync:v4.3.0
           env:
             - name: GITSYNC_REPO
@@ -79,7 +79,8 @@ spec:
               value: "current"
             - name: GITSYNC_VERBOSE
               value: "6"
-          volumeMounts:
+
+            volumeMounts:
             - name: html
               mountPath: /usr/share/nginx/html
               subPath: current/public  # Hugo builds to public/ folder
