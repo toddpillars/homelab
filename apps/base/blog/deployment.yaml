@@ -47,7 +47,7 @@ spec:
               echo "Files detected, starting nginx"
 
               exec nginx -g "daemon off;"
-        resources:
+          resources:
             requests:
               memory: "64Mi"
               cpu: "50m"
