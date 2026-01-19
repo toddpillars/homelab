@@ -56,7 +56,7 @@ spec:
               cpu: "100m"
 
         # git-sync keeps content updated
-        - name: git-sync
+        name: git-sync
           image: registry.k8s.io/git-sync/git-sync:v4.3.0
           env:
             - name: GITSYNC_REPO
@@ -98,7 +98,7 @@ spec:
               memory: "64Mi"
               cpu: "50m"
 
-      volumes:
+        volumes:
         - name: html
           emptyDir: {}
         - name: git-secret
