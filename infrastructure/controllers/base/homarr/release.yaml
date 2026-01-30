@@ -20,7 +20,7 @@ spec:
       type: ClusterIP
       port: 7575
       targetPort: 7575
-    
+
     # Enable persistent storage
     persistence:
       homarrDatabase:
@@ -29,7 +29,7 @@ spec:
         accessMode: ReadWriteOnce
         size: 1Gi
         mountPath: /appdata
-    
+
     resources:
       limits:
         memory: 1Gi
@@ -37,24 +37,24 @@ spec:
       requests:
         memory: 512Mi
         cpu: 200m
-    
+
     livenessProbe:
       initialDelaySeconds: 60
       periodSeconds: 10
       timeoutSeconds: 5
       failureThreshold: 5
-    
+
     readinessProbe:
       initialDelaySeconds: 30
       periodSeconds: 10
       timeoutSeconds: 5
       failureThreshold: 3
-  
+
   install:
     createNamespace: false
     remediation:
       retries: 3
-  
+
   upgrade:
     remediation:
       retries: 3
