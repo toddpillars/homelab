@@ -1,0 +1,18 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: open-webui
+  namespace: open-webui
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: ai.toddpillars.com
+      http:
+        paths:
+          - backend:
+              service:
+                name: open-webui
+                port:
+                  number: 80
+            path: /
+            pathType: Prefix
