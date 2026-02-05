@@ -17,4 +17,6 @@ data:
         service: http://linkding.linkding.svc.cluster.local:9090
       - hostname: abs.toddpillars.com
         service: http://audiobookshelf.audiobookshelf.svc.cluster.local:3005
+      - hostname: n8n.toddpillars.com
+        service: http://n8n.naten.svc.cluster.local:5678
       - service: http_status:404
