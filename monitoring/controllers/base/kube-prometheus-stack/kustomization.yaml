@@ -6,4 +6,5 @@ resources:
   - loki-repository.yaml
   - release.yaml
   - loki-release.yaml
+  - loki-datasource.yaml
   - grafana-credentials.enc.yaml
