@@ -21,7 +21,6 @@ spec:
   driftDetection:
     mode: enabled
     ignore:
-      # Ignore "validated" annotation which is not inserted during install
       - paths: ["/metadata/annotations/prometheus-operator-validated"]
         target:
           kind: PrometheusRule
@@ -47,3 +46,12 @@ spec:
          - secretName: grafana-tls-secret
            hosts:
              - grs.toddpillars.com
+      additionalDataSources:
+        - name: Loki
+          type: loki
+          access: proxy
+          url: http://loki:3100
+          isDefault: false
+          version: 1
+          editable: true
+          jsonData: {}
