@@ -4,7 +4,6 @@ metadata:
   name: homarr
   namespace: homarr
   annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: websecure
     traefik.ingress.kubernetes.io/router.middlewares: homarr-homarr-headers@kubernetescrd
 spec:
   ingressClassName: traefik
@@ -19,6 +18,3 @@ spec:
                   number: 7575
             path: /
             pathType: Prefix
-  tls:
-    - hosts:
-        - hms.toddpillars.com
