@@ -15,6 +15,11 @@ spec:
         namespace: homarr
       interval: 12h
   values:
+    env:
+      NEXTAUTH_URL: "https://hms.toddpillars.com"
+      BASE_URL: "https://hms.toddpillars.com"
+      TZ: "America/New_York"
+
     service:
       enabled: true
       type: ClusterIP
