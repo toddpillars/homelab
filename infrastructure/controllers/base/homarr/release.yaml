@@ -16,8 +16,8 @@ spec:
       interval: 12h
   values:
     env:
-      NEXTAUTH_URL: "https://hms.toddpillars.com"
-      BASE_URL: "https://hms.toddpillars.com"
+      NEXTAUTH_URL: "http://hms.toddpillars.com"
+      BASE_URL: "http://hms.toddpillars.com"
       AUTH_TRUST_HOST: "true"
       TZ: "America/New_York"
 
