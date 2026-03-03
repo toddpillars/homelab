@@ -18,6 +18,7 @@ spec:
     env:
       NEXTAUTH_URL: "https://hms.toddpillars.com"
       BASE_URL: "https://hms.toddpillars.com"
+      AUTH_TRUST_HOST: "true"
       TZ: "America/New_York"
 
     service:
