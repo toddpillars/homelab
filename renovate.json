@@ -1,8 +1,28 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
   "kubernetes": {
+    "fileMatch": ["\\.yaml$", "\\.yml$"]
+  },
+  "flux": {
     "fileMatch": [
-      "\\.yaml$"
+      "(^|/)infrastructure/.+\\.ya?ml$",
+      "(^|/)clusters/.+\\.ya?ml$"
     ]
-  }
+  },
+  "helm-values": {
+    "fileMatch": [
+      "(^|/).*values\\.ya?ml$"
+    ]
+  },
+  "packageRules": [
+    {
+      "description": "Auto-merge Helm chart updates",
+      "matchDatasources": ["helm"],
+      "automerge": false,
+      "automergeType": "pr"
+    }
+  ]
 }
