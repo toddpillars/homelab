@@ -21,6 +21,7 @@ spec:
       - http://192.168.0.36:11434
     persistence:
       enabled: true
-      storageClassName: local-path
-      accessMode: ReadWriteOnce
+      storageClass: local-path
+      accessMode:
+        - ReadWriteOnce
       size: 5Gi
