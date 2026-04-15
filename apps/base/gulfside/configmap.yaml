@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gulfside-html
+  namespace: gulfside
+data:
+  index.html: |
+    <html>
+    <body>
+    <h1 style="text-align: center;">Gulfside AI</h1>
+    </body>
+    </html>

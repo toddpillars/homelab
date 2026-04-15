@@ -13,6 +13,10 @@ data:
         service: http://blog.blog.svc.cluster.local:80
       - hostname: www.toddpillars.com
         service: http://blog.blog.svc.cluster.local:80
+      - hostname: gulfsideai.com
+        service: http://gulfside-website.gulfside.svc.cluster.local:80
+      - hostname: www.gulfsideai.com
+        service: http://gulfside-website.gulfside.svc.cluster.local:80
       - hostname: lds.toddpillars.com
         service: http://linkding.linkding.svc.cluster.local:9090
       - hostname: abs.toddpillars.com
