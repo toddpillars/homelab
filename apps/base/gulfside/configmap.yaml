@@ -42,7 +42,8 @@ data:
       .stat-label { font-size: 12px; color: rgba(220,225,240,0.4); margin-top: 4px; letter-spacing: 0.04em; text-transform: uppercase; }
       .cards-section { padding: 72px 48px; max-width: 1100px; margin: 0 auto; width: 100%; }
       .section-label { font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(220,225,240,0.35); text-align: center; margin-bottom: 40px; }
-      .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; }
+      .cards-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+      @media (max-width: 640px) { .cards-grid { grid-template-columns: 1fr; } }
       .card { background: rgba(255,255,255,0.032); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 28px 26px; position: relative; overflow: hidden; transition: border-color 0.2s, background 0.2s; }
       .card:hover { border-color: rgba(255,120,51,0.3); background: rgba(255,255,255,0.05); }
       .card-accent { position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, #ff6a1a, transparent); opacity: 0; transition: opacity 0.2s; }
@@ -104,6 +105,17 @@ data:
         <div class="section-label">What we do</div>
         <div class="cards-grid">
     
+          <!-- Row 1 -->
+          <div class="card card-featured">
+            <div class="card-accent"></div>
+            <div class="card-badge">Now Available</div>
+            <div class="card-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff7833" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+            </div>
+            <h3>Applied AI Engineering</h3>
+            <p>From agent deployment to cloud-native infrastructure — we get into the stack and make it run. MCP integrations, local LLM pipelines, agentic workflows, and the AIOps layer to keep it all production-ready.</p>
+          </div>
+    
           <div class="card">
             <div class="card-accent"></div>
             <div class="card-icon">
@@ -113,6 +125,7 @@ data:
             <p>Map your existing processes to AI-augmented pipelines that reduce manual overhead and surface better decisions, faster.</p>
           </div>
     
+          <!-- Row 2 -->
           <div class="card">
             <div class="card-accent"></div>
             <div class="card-icon">
@@ -129,16 +142,6 @@ data:
             </div>
             <h3>Strategic Advisory</h3>
             <p>Long-term AI roadmapping for leadership — from policy and governance to identifying your highest-leverage automation opportunities.</p>
-          </div>
-    
-          <div class="card card-featured">
-            <div class="card-accent"></div>
-            <div class="card-badge">Now Available</div>
-            <div class="card-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff7833" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-            </div>
-            <h3>Applied AI Engineering</h3>
-            <p>From agent deployment to cloud-native infrastructure — we get into the stack and make it run. MCP integrations, local LLM pipelines, agentic workflows, and the AIOps layer to keep it all production-ready.</p>
           </div>
     
         </div>
@@ -173,4 +176,3 @@ data:
     
     </body>
     </html>
-    
