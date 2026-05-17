@@ -19,7 +19,7 @@ spec:
 
       containers:
         - name: audiobookshelf
-          image: advplyr/audiobookshelf:2.34.0
+          image: advplyr/audiobookshelf:2.35.0
 
           securityContext:
             allowPrivilegeEscalation: false
