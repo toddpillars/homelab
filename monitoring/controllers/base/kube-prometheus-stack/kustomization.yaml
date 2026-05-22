@@ -7,4 +7,6 @@ resources:
   - release.yaml
   - loki-release.yaml
   - loki-datasource.yaml
+  - vllm-external-service.yaml
+  - vllm-servicemonitor.yaml
   - grafana-credentials.enc.yaml
