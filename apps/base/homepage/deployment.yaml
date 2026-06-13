@@ -13,10 +13,15 @@ spec:
       labels:
         app: homepage
     spec:
-      securityContext:
-        runAsUser: 1000
-        runAsGroup: 1000
-        fsGroup: 1000
+      initContainers:
+        - name: copy-config
+          image: busybox
+          command: ['sh', '-c', 'cp /configmap/* /config/']
+          volumeMounts:
+            - name: configmap
+              mountPath: /configmap
+            - name: config
+              mountPath: /config
       containers:
         - name: homepage
           image: ghcr.io/gethomepage/homepage:latest
@@ -35,28 +40,10 @@ spec:
               memory: 256Mi
           volumeMounts:
             - name: config
-              mountPath: /app/config/settings.yaml
-              subPath: settings.yaml
-            - name: config
-              mountPath: /app/config/services.yaml
-              subPath: services.yaml
-            - name: config
-              mountPath: /app/config/bookmarks.yaml
-              subPath: bookmarks.yaml
-            - name: config
-              mountPath: /app/config/widgets.yaml
-              subPath: widgets.yaml
-            - name: config
-              mountPath: /app/config/kubernetes.yaml
-              subPath: kubernetes.yaml
-            - name: config
-              mountPath: /app/config/docker.yaml
-              subPath: docker.yaml
-            - name: logs
-              mountPath: /app/config/logs
+              mountPath: /app/config
       volumes:
-        - name: config
+        - name: configmap
           configMap:
             name: homepage-config
-        - name: logs
+        - name: config
           emptyDir: {}
