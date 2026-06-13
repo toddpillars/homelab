@@ -1,6 +1,15 @@
 # Ignore temporary files
 **/*.tmp
 
+# Ignore .env
+.env
+
+# Ignore .DS_
+.DS_Store
+apps/.DS_Store
+apps/base/.DS_Store
+apps/staging/.DS_Store
+
 # Ignore log files
 *.log
 
