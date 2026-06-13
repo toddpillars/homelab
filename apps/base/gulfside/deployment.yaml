@@ -13,6 +13,8 @@ spec:
       labels:
         app: gulfside-website
     spec:
+      securityContext:
+        fsGroup: 65533
       containers:
         - name: nginx
           image: nginx:alpine
@@ -21,7 +23,29 @@ spec:
               name: http
           volumeMounts:
             - name: html
-              mountPath: /usr/share/nginx/html
+              mountPath: /tmp/git
+              readOnly: true
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              cat > /etc/nginx/conf.d/default.conf <<'EOF'
+              server {
+                  listen 80;
+                  root /tmp/git/current/dist;
+                  index index.html;
+                  location / {
+                      try_files $uri $uri/ /index.html;
+                  }
+              }
+              EOF
+
+              echo "Waiting for git-sync to populate files..."
+              until [ -f /tmp/git/current/dist/index.html ]; do
+                sleep 2
+              done
+              echo "Files detected, starting nginx"
+
+              exec nginx -g "daemon off;"
           resources:
             requests:
               memory: "64Mi"
@@ -29,7 +53,49 @@ spec:
             limits:
               memory: "128Mi"
               cpu: "100m"
+
+        - name: git-sync
+          image: registry.k8s.io/git-sync/git-sync:v4.7.0
+          env:
+            - name: GITSYNC_REPO
+              value: "git@github.com:toddpillars/gulfside.git"
+            - name: GITSYNC_BRANCH
+              value: "main"
+            - name: GITSYNC_ROOT
+              value: "/tmp/git"
+            - name: GITSYNC_DEST
+              value: "repo"
+            - name: GITSYNC_PERIOD
+              value: "60s"
+            - name: GITSYNC_SSH_KEY_FILE
+              value: "/etc/git-secret/ssh"
+            - name: GITSYNC_SSH_KNOWN_HOSTS
+              value: "false"
+            - name: GIT_SSH_COMMAND
+              value: "ssh -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null"
+            - name: GITSYNC_LINK
+              value: "current"
+          volumeMounts:
+            - name: html
+              mountPath: /tmp/git
+            - name: git-secret
+              mountPath: /etc/git-secret
+              readOnly: true
+          securityContext:
+            runAsUser: 65533
+            runAsGroup: 65533
+          resources:
+            requests:
+              memory: "32Mi"
+              cpu: "25m"
+            limits:
+              memory: "64Mi"
+              cpu: "50m"
+
       volumes:
         - name: html
-          configMap:
-            name: gulfside-html
+          emptyDir: {}
+        - name: git-secret
+          secret:
+            secretName: git-ssh-key
+            defaultMode: 0400
