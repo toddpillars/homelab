@@ -34,18 +34,34 @@ else
   echo "⚠️  No mealie pod found"
 fi
 
-# Backup Homarr
-echo "📦 Backing up homarr..."
-kubectl get deployment -n homarr homarr -o yaml > "$BACKUP_DIR/homarr-deployment.yaml" 2>/dev/null || echo "⚠️  No deployment for homarr"
-kubectl get pvc -n homarr -o yaml > "$BACKUP_DIR/homarr-pvc.yaml" 2>/dev/null || echo "⚠️  No PVC for homarr"
+# Backup Audiobookshelf (config and metadata only)
+# NOTE: /audiobooks is intentionally excluded — it can be large and should be
+# backed up separately (e.g. NAS sync or a dedicated media backup tool).
+echo "📦 Backing up audiobookshelf (config + metadata)..."
+kubectl get deployment -n audiobookshelf audiobookshelf -o yaml > "$BACKUP_DIR/audiobookshelf-deployment.yaml" 2>/dev/null || echo "⚠️  No deployment for audiobookshelf"
+kubectl get pvc -n audiobookshelf -o yaml > "$BACKUP_DIR/audiobookshelf-pvc.yaml" 2>/dev/null || echo "⚠️  No PVC for audiobookshelf"
 
-HOMARR_POD=$(kubectl get pod -n homarr -l app.kubernetes.io/name=homarr -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
-if [ -n "$HOMARR_POD" ]; then
-  kubectl exec -n homarr $HOMARR_POD -- tar czf - /appdata 2>/dev/null \
-    > "$BACKUP_DIR/homarr-data.tar.gz" || echo "⚠️  Could not backup homarr data"
-  echo "✅ Homarr data backed up"
+ABS_POD=$(kubectl get pod -n audiobookshelf -l app=audiobookshelf -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+if [ -n "$ABS_POD" ]; then
+  kubectl exec -n audiobookshelf $ABS_POD -- tar czf - /config /metadata 2>/dev/null \
+    > "$BACKUP_DIR/audiobookshelf-data.tar.gz" || echo "⚠️  Could not backup audiobookshelf data"
+  echo "✅ Audiobookshelf config + metadata backed up"
 else
-  echo "⚠️  No homarr pod found"
+  echo "⚠️  No audiobookshelf pod found"
+fi
+
+# Backup n8n
+echo "📦 Backing up n8n..."
+kubectl get deployment -n naten n8n -o yaml > "$BACKUP_DIR/n8n-deployment.yaml" 2>/dev/null || echo "⚠️  No deployment for n8n"
+kubectl get pvc -n naten -o yaml > "$BACKUP_DIR/n8n-pvc.yaml" 2>/dev/null || echo "⚠️  No PVC for n8n"
+
+N8N_POD=$(kubectl get pod -n naten -l app=n8n -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+if [ -n "$N8N_POD" ]; then
+  kubectl exec -n naten $N8N_POD -- tar czf - /home/node/.n8n 2>/dev/null \
+    > "$BACKUP_DIR/n8n-data.tar.gz" || echo "⚠️  Could not backup n8n data"
+  echo "✅ n8n data backed up"
+else
+  echo "⚠️  No n8n pod found"
 fi
 
 # Backup Flux state

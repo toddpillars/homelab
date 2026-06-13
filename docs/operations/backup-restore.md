@@ -2,17 +2,22 @@
 
 ## Overview
 
-This guide covers backing up and restoring data from Kubernetes persistent volumes, specifically for applications like Linkding, Mealie, and Homarr.
+This guide covers backing up and restoring data from Kubernetes persistent volumes for stateful applications in the homelab cluster. All configuration is already in Git via GitOps — only application data volumes need explicit backup.
 
 ## What Needs Backing Up?
 
 ### Application Data Locations
 
-| Application | PVC Name | Mount Path | Data Type |
-|------------|----------|------------|-----------|
-| Linkding | linkding-data | /etc/linkding/data | SQLite DB |
-| Mealie | mealie-data | /app/data | PostgreSQL/SQLite |
-| Homarr | homarr-config | /app/data | SQLite + config |
+| Application | Namespace | PVC Name | Mount Path | Data Type |
+|-------------|-----------|----------|------------|-----------|
+| Linkding | linkding | linkding-data-pvc | /etc/linkding/data | SQLite DB |
+| Mealie | mealie | mealie-data | /app/data | SQLite + uploads |
+| Audiobookshelf | audiobookshelf | audiobookshelf-config | /config | App config + DB |
+| Audiobookshelf | audiobookshelf | audiobookshelf-metadata | /metadata | Book metadata/covers |
+| Audiobookshelf | audiobookshelf | audiobookshelf-audiobooks | /audiobooks | Audio files (large — see note) |
+| n8n | naten | n8n-data | /home/node/.n8n | Workflows + credentials |
+
+> **Audiobookshelf audiobooks:** The `/audiobooks` PVC is intentionally excluded from the automated backup script because it can hold large media files. Back it up separately via NAS sync, rsync, or another media-aware tool on its own schedule.
 
 ### Secrets and Configuration
 - Encrypted secrets in Git (already backed up via SOPS)
@@ -21,38 +26,83 @@ This guide covers backing up and restoring data from Kubernetes persistent volum
 
 **GitOps saves us here!** All configuration is in Git. We only need to backup the **data volumes**.
 
+## Automated Backup Script
+
+`scripts/backup-cluster.sh` backs up all stateful apps, the Flux configuration state, and the SOPS AGE key.
+
+```bash
+./scripts/backup-cluster.sh
+```
+
+Output goes to `./backups/YYYYMMDD-HHMMSS/`. What it produces:
+
+| File | Contents |
+|------|----------|
+| `linkding-data.tar.gz` | /etc/linkding/data |
+| `mealie-data.tar.gz` | /app/data |
+| `audiobookshelf-data.tar.gz` | /config + /metadata (no audiobooks) |
+| `n8n-data.tar.gz` | /home/node/.n8n |
+| `*-deployment.yaml` | Deployment spec for each app |
+| `*-pvc.yaml` | PVC spec(s) for each app |
+| `flux-gitrepo.yaml` | Flux GitRepository resources |
+| `flux-kustomizations.yaml` | Flux Kustomization resources |
+| `helmreleases.yaml` | All HelmRelease resources |
+| `sops-age-secret.yaml` | AGE decryption key (plaintext — store securely) |
+| `nodes.yaml` | Node configs |
+| `all-pvcs.yaml` | All PVCs across namespaces |
+
+## Automated Restore Script
+
+`scripts/restore-cluster.sh` restores data from a backup directory. Run it after Flux has deployed all apps on the target cluster.
+
+```bash
+./scripts/restore-cluster.sh ./backups/20260109-020000
+```
+
+For each app it will:
+1. Scale the deployment to 0
+2. Spin up a temporary restore pod mounting the PVC(s)
+3. Stream the archive into the pod via `tar xzf`
+4. Delete the restore pod
+5. Scale the deployment back to 1
+
 ## Pre-Migration Backup Checklist
 
 Before migrating to a new cluster:
 
-- [ ] Identify all PVCs: `kubectl get pvc -A`
-- [ ] Export application data from each PVC
-- [ ] Export databases (if using external DB)
-- [ ] Document current versions of apps
-- [ ] Save SOPS age keys securely
-- [ ] Backup kubeconfig
-- [ ] List all running pods: `kubectl get pods -A -o yaml > cluster-state.yaml`
+- [ ] Run `./scripts/backup-cluster.sh` and verify all `.tar.gz` files were created
+- [ ] Back up `/audiobooks` separately (NAS sync, rsync, etc.)
+- [ ] Copy the `backups/` directory to a second location (USB, NAS, cloud)
+- [ ] Save `sops-age-secret.yaml` from the backup somewhere safe offline
+- [ ] Document current app versions: `kubectl get deployments -A -o wide`
+- [ ] Save kubeconfig: `cp ~/.kube/config ~/kube-backup.yaml`
 
 ## Manual Backup Methods
 
-### Method 1: kubectl cp (Simple, works for small data)
+### kubectl exec (simple, good for small data)
 ```bash
-# Backup Linkding data
+# Backup Linkding
 kubectl exec -n linkding deployment/linkding -- tar czf - /etc/linkding/data \
   > linkding-backup-$(date +%Y%m%d).tar.gz
 
-# Backup Mealie data
+# Backup Mealie
 kubectl exec -n mealie deployment/mealie -- tar czf - /app/data \
   > mealie-backup-$(date +%Y%m%d).tar.gz
 
-# Backup Homarr data
-kubectl exec -n homarr deployment/homarr -- tar czf - /app/data \
-  > homarr-backup-$(date +%Y%m%d).tar.gz
+# Backup Audiobookshelf config + metadata
+kubectl exec -n audiobookshelf deployment/audiobookshelf -- tar czf - /config /metadata \
+  > audiobookshelf-backup-$(date +%Y%m%d).tar.gz
+
+# Backup n8n
+kubectl exec -n naten deployment/n8n -- tar czf - /home/node/.n8n \
+  > n8n-backup-$(date +%Y%m%d).tar.gz
 ```
 
-### Method 2: Using a Backup Pod (Better for large data)
+### Backup Pod (better for large data or when the app must stay down)
 ```bash
-# Create a backup pod with PVC mounted
+# Example: Linkding
+kubectl scale deployment linkding -n linkding --replicas=0
+
 cat <<YAML | kubectl apply -f -
 apiVersion: v1
 kind: Pod
@@ -62,7 +112,7 @@ metadata:
 spec:
   containers:
   - name: backup
-    image: ubuntu:latest
+    image: busybox:latest
     command: ["sleep", "3600"]
     volumeMounts:
     - name: data
@@ -70,52 +120,70 @@ spec:
   volumes:
   - name: data
     persistentVolumeClaim:
-      claimName: linkding-data
+      claimName: linkding-data-pvc
+  restartPolicy: Never
 YAML
 
-# Wait for pod to be ready
 kubectl wait --for=condition=ready pod/backup-pod -n linkding
-
-# Copy data out
-kubectl cp linkding/backup-pod:/data ./linkding-backup/
-
-# Cleanup
+kubectl exec -n linkding backup-pod -- tar czf - /data > linkding-backup.tar.gz
 kubectl delete pod backup-pod -n linkding
+
+kubectl scale deployment linkding -n linkding --replicas=1
 ```
 
-### Method 3: Velero (Automated, Production-Ready)
+### Velero (automated, production-ready)
 
-See [Velero Setup](#velero-setup) below for automated backups.
+Velero provides automated cluster and PVC backups with a storage backend.
 
-## Restore Procedures
-
-### Restoring to New Cluster
-
-**Assumption:** New cluster is set up with Flux, apps are deployed via GitOps.
-
-#### Step 1: Verify Apps Are Running
+**Install:**
 ```bash
-kubectl get pods -n linkding
-kubectl get pods -n mealie
-kubectl get pods -n homarr
+helm repo add vmware-tanzu https://vmware-tanzu.github.io/helm-charts
+helm repo update
+
+helm install velero vmware-tanzu/velero \
+  --namespace velero \
+  --create-namespace \
+  --set configuration.provider=aws \
+  --set configuration.backupStorageLocation.bucket=k8s-backups \
+  --set credentials.useSecret=true \
+  --set initContainers[0].name=velero-plugin-for-aws \
+  --set initContainers[0].image=velero/velero-plugin-for-aws:v1.8.0 \
+  --set initContainers[0].volumeMounts[0].mountPath=/target \
+  --set initContainers[0].volumeMounts[0].name=plugins
 ```
 
-#### Step 2: Scale Down Apps
+**Schedule daily backups:**
 ```bash
+velero schedule create daily-backup \
+  --schedule="0 2 * * *" \
+  --include-namespaces linkding,mealie,audiobookshelf,naten
+
+velero schedule get
+```
+
+**Manual backup:**
+```bash
+velero backup create pre-migration-backup \
+  --include-namespaces linkding,mealie,audiobookshelf,naten \
+  --wait
+```
+
+**Restore:**
+```bash
+velero restore create --from-backup pre-migration-backup
+```
+
+## Restore Procedures (Manual)
+
+### Restoring a Single App
+
+**Assumption:** Flux has already deployed the app and PVCs exist.
+
+```bash
+# 1. Scale down
 kubectl scale deployment linkding -n linkding --replicas=0
-kubectl scale deployment mealie -n mealie --replicas=0
-kubectl scale deployment homarr -n homarr --replicas=0
-```
 
-#### Step 3: Restore Data
-
-**Using kubectl cp:**
-```bash
-# Extract backup
-mkdir -p /tmp/linkding-restore
-tar xzf linkding-backup-20260109.tar.gz -C /tmp/linkding-restore
-
-# Create restore pod
+# 2. Create restore pod
 cat <<YAML | kubectl apply -f -
 apiVersion: v1
 kind: Pod
@@ -125,313 +193,53 @@ metadata:
 spec:
   containers:
   - name: restore
-    image: ubuntu:latest
+    image: busybox:latest
     command: ["sleep", "3600"]
     volumeMounts:
     - name: data
-      mountPath: /data
+      mountPath: /etc/linkding/data
   volumes:
   - name: data
     persistentVolumeClaim:
-      claimName: linkding-data
+      claimName: linkding-data-pvc
+  restartPolicy: Never
 YAML
 
 kubectl wait --for=condition=ready pod/restore-pod -n linkding
 
-# Copy data in
-kubectl cp /tmp/linkding-restore/etc/linkding/data/. linkding/restore-pod:/data/
+# 3. Stream archive in
+kubectl exec -n linkding restore-pod -- tar xzf - -C / < linkding-backup.tar.gz
 
-# Cleanup
+# 4. Cleanup and scale up
 kubectl delete pod restore-pod -n linkding
-```
-
-#### Step 4: Scale Apps Back Up
-```bash
 kubectl scale deployment linkding -n linkding --replicas=1
-kubectl scale deployment mealie -n mealie --replicas=1
-kubectl scale deployment homarr -n homarr --replicas=1
-```
-
-#### Step 5: Verify
-```bash
 kubectl logs -n linkding deployment/linkding
-kubectl logs -n mealie deployment/mealie
-kubectl logs -n homarr deployment/homarr
-```
-
-## Automated Backup Strategy
-
-### Option 1: CronJob Backup (Simple)
-
-Create a CronJob that runs backups daily:
-```yaml
-apiVersion: batch/v1
-kind: CronJob
-metadata:
-  name: linkding-backup
-  namespace: linkding
-spec:
-  schedule: "0 2 * * *"  # 2 AM daily
-  jobTemplate:
-    spec:
-      template:
-        spec:
-          containers:
-          - name: backup
-            image: ubuntu:latest
-            command:
-            - /bin/bash
-            - -c
-            - |
-              apt-get update && apt-get install -y curl
-              tar czf /backup/linkding-$(date +%Y%m%d).tar.gz /data
-              # Upload to S3/storage here
-              # curl -T /backup/linkding-*.tar.gz https://your-storage/
-            volumeMounts:
-            - name: data
-              mountPath: /data
-              readOnly: true
-            - name: backup
-              mountPath: /backup
-          restartPolicy: OnFailure
-          volumes:
-          - name: data
-            persistentVolumeClaim:
-              claimName: linkding-data
-          - name: backup
-            emptyDir: {}
-```
-
-### Option 2: Velero Setup
-
-Velero provides automated cluster and PVC backups.
-
-**Install Velero:**
-```bash
-# Add Velero Helm repo
-helm repo add vmware-tanzu https://vmware-tanzu.github.io/helm-charts
-helm repo update
-
-# Install Velero (with local storage for homelab)
-helm install velero vmware-tanzu/velero \
-  --namespace velero \
-  --create-namespace \
-  --set configuration.provider=aws \
-  --set configuration.backupStorageLocation.bucket=k8s-backups \
-  --set configuration.volumeSnapshotLocation.config.region=us-east-1 \
-  --set credentials.useSecret=true \
-  --set initContainers[0].name=velero-plugin-for-aws \
-  --set initContainers[0].image=velero/velero-plugin-for-aws:v1.8.0 \
-  --set initContainers[0].volumeMounts[0].mountPath=/target \
-  --set initContainers[0].volumeMounts[0].name=plugins
-```
-
-**Create Backup Schedule:**
-```bash
-# Daily backup of all namespaces
-velero schedule create daily-backup \
-  --schedule="0 2 * * *" \
-  --include-namespaces linkding,mealie,homarr
-
-# Verify
-velero schedule get
-```
-
-**Manual Backup:**
-```bash
-velero backup create pre-migration-backup \
-  --include-namespaces linkding,mealie,homarr \
-  --wait
-```
-
-**Restore:**
-```bash
-velero restore create --from-backup pre-migration-backup
-```
-
-## Pre-Migration Backup Script
-
-Save this as `scripts/backup-cluster.sh`:
-```bash
-#!/bin/bash
-set -e
-
-BACKUP_DIR="./backups/$(date +%Y%m%d-%H%M%S)"
-mkdir -p "$BACKUP_DIR"
-
-echo "🔄 Starting cluster backup to $BACKUP_DIR"
-
-# Backup each app
-for app in linkding mealie homarr; do
-  echo "📦 Backing up $app..."
-  
-  # Get the deployment and PVC info
-  kubectl get deployment -n $app -o yaml > "$BACKUP_DIR/${app}-deployment.yaml"
-  kubectl get pvc -n $app -o yaml > "$BACKUP_DIR/${app}-pvc.yaml"
-  
-  # Backup data
-  POD=$(kubectl get pod -n $app -l app=$app -o jsonpath='{.items[0].metadata.name}')
-  kubectl exec -n $app $POD -- tar czf - /app/data 2>/dev/null \
-    > "$BACKUP_DIR/${app}-data.tar.gz" || echo "⚠️  No data found for $app"
-done
-
-# Backup Flux state
-echo "📦 Backing up Flux configuration..."
-kubectl get gitrepository -n flux-system -o yaml > "$BACKUP_DIR/flux-gitrepo.yaml"
-kubectl get kustomization -n flux-system -o yaml > "$BACKUP_DIR/flux-kustomizations.yaml"
-kubectl get helmrelease -A -o yaml > "$BACKUP_DIR/helmreleases.yaml"
-
-# Backup secrets (they're encrypted in git, but just in case)
-echo "🔐 Backing up secrets..."
-kubectl get secret sops-age -n flux-system -o yaml > "$BACKUP_DIR/sops-age-secret.yaml"
-
-# Save cluster info
-echo "ℹ️  Saving cluster info..."
-kubectl get nodes -o yaml > "$BACKUP_DIR/nodes.yaml"
-kubectl get pods -A -o yaml > "$BACKUP_DIR/all-pods.yaml"
-
-echo "✅ Backup complete: $BACKUP_DIR"
-echo ""
-echo "📋 Backup contents:"
-ls -lh "$BACKUP_DIR"
-```
-
-Make it executable:
-```bash
-chmod +x scripts/backup-cluster.sh
-```
-
-## Restore Script
-
-Save this as `scripts/restore-cluster.sh`:
-```bash
-#!/bin/bash
-set -e
-
-if [ -z "$1" ]; then
-  echo "Usage: $0 <backup-directory>"
-  exit 1
-fi
-
-BACKUP_DIR="$1"
-
-if [ ! -d "$BACKUP_DIR" ]; then
-  echo "Error: Backup directory not found: $BACKUP_DIR"
-  exit 1
-fi
-
-echo "🔄 Restoring from $BACKUP_DIR"
-
-# Wait for apps to be deployed by Flux
-echo "⏳ Waiting for Flux to deploy apps..."
-sleep 30
-
-# Restore each app's data
-for app in linkding mealie homarr; do
-  if [ -f "$BACKUP_DIR/${app}-data.tar.gz" ]; then
-    echo "📦 Restoring $app data..."
-    
-    # Scale down
-    kubectl scale deployment $app -n $app --replicas=0
-    sleep 10
-    
-    # Create restore pod
-    cat <<YAML | kubectl apply -f -
-apiVersion: v1
-kind: Pod
-metadata:
-  name: restore-pod
-  namespace: $app
-spec:
-  containers:
-  - name: restore
-    image: ubuntu:latest
-    command: ["sleep", "3600"]
-    volumeMounts:
-    - name: data
-      mountPath: /data
-  volumes:
-  - name: data
-    persistentVolumeClaim:
-      claimName: ${app}-data
-YAML
-
-    kubectl wait --for=condition=ready pod/restore-pod -n $app --timeout=60s
-    
-    # Restore data
-    kubectl exec -n $app restore-pod -- tar xzf - -C /data \
-      < "$BACKUP_DIR/${app}-data.tar.gz"
-    
-    # Cleanup
-    kubectl delete pod restore-pod -n $app
-    
-    # Scale back up
-    kubectl scale deployment $app -n $app --replicas=1
-    
-    echo "✅ $app restored"
-  fi
-done
-
-echo "✅ Restore complete!"
-```
-
-Make it executable:
-```bash
-chmod +x scripts/restore-cluster.sh
 ```
 
 ## Testing Backups
 
-**Always test your backups!**
+Always test your backups after creating them:
+
 ```bash
-# 1. Create a test namespace
+# List archive contents without extracting
+tar tzf backups/latest/linkding-data.tar.gz | head -20
+
+# Check archive integrity
+tar tzf backups/latest/mealie-data.tar.gz > /dev/null && echo "OK" || echo "CORRUPT"
+
+# Full restore test: spin up a scratch namespace, restore into it, verify
 kubectl create namespace backup-test
-
-# 2. Deploy a test app with data
-kubectl run test-app --image=nginx -n backup-test
-kubectl exec -n backup-test test-app -- sh -c 'echo "test data" > /tmp/test.txt'
-
-# 3. Backup
-kubectl exec -n backup-test test-app -- cat /tmp/test.txt > test-backup.txt
-
-# 4. Delete
-kubectl delete pod test-app -n backup-test
-
-# 5. Recreate and restore
-kubectl run test-app --image=nginx -n backup-test
-kubectl exec -n backup-test test-app -i -- sh -c 'cat > /tmp/test.txt' < test-backup.txt
-
-# 6. Verify
-kubectl exec -n backup-test test-app -- cat /tmp/test.txt
-
-# 7. Cleanup
+# ... mount PVC clone or use a temporary pod to validate data
 kubectl delete namespace backup-test
 ```
 
 ## Best Practices
 
-1. **Backup Before Changes**
-   - Always backup before major changes
-   - Run `scripts/backup-cluster.sh` before migrations
-
-2. **Test Restores Regularly**
-   - Schedule quarterly restore tests
-   - Verify data integrity after restore
-
-3. **Multiple Backup Locations**
-   - Local backups on your machine
-   - Remote storage (S3, NAS, etc.)
-   - Git for configuration (already doing this!)
-
-4. **Document Versions**
-   - Note app versions in backup metadata
-   - Track Kubernetes version
-   - Save Helm chart versions
-
-5. **Automate**
-   - Use CronJobs or Velero
-   - Don't rely on manual backups
-   - Monitor backup success/failure
+1. **Backup Before Changes** — run `scripts/backup-cluster.sh` before any major cluster change or upgrade
+2. **Test Restores** — quarterly, pick one app and do a full restore into a test namespace
+3. **Multiple Locations** — local machine + NAS or cloud storage; never only one copy
+4. **Protect the SOPS Key** — `sops-age-secret.yaml` from the backup contains your AGE private key in plaintext; store it offline or in a password manager
+5. **Automate** — consider a CronJob or Velero rather than relying on manual runs
 
 ## Recovery Time Objectives
 
@@ -441,47 +249,31 @@ kubectl delete namespace backup-test
 | Full cluster rebuild | 1 hour | Last backup |
 | Configuration drift | 5 min | Git commit |
 
-## See Also
-
-- [Cluster Migration Guide](../troubleshooting/cluster-migration.md)
-- [GitOps Setup](../guides/gitops-setup.md)
-- [Velero Documentation](https://velero.io/docs/)
-
 ## Linkding Superuser
 
-Linkding automatically creates a superuser on first startup using environment variables from the `linkding-container-env` secret:
+Linkding creates a superuser on first startup from the `linkding-container-env` secret:
 
-- **Username**: Defined in `LD_SUPERUSER_NAME`
-- **Password**: Defined in `LD_SUPERUSER_PASSWORD`
+- **Username**: `LD_SUPERUSER_NAME`
+- **Password**: `LD_SUPERUSER_PASSWORD`
 
-The secret is:
-- Encrypted with SOPS in `apps/staging/linkding/linkding-secret.enc.yaml`
-- Automatically decrypted by Flux on deployment
-- Referenced in deployment via `envFrom`
+The secret is SOPS-encrypted at `apps/staging/linkding/linkding-secret.enc.yaml` and automatically decrypted by Flux.
 
 **To change credentials:**
-
-1. Edit the encrypted secret:
 ```bash
-   sops apps/staging/linkding/linkding-secret.enc.yaml
+sops apps/staging/linkding/linkding-secret.enc.yaml
+# Edit values, save — SOPS re-encrypts on exit
+
+git add apps/staging/linkding/linkding-secret.enc.yaml
+git commit -m "Update Linkding superuser credentials"
+git push
+
+# Restart to pick up new values (only affects initial DB creation)
+kubectl rollout restart deployment/linkding -n linkding
 ```
 
-2. Update the values (they're base64 encoded):
-```bash
-   echo -n "newusername" | base64
-   echo -n "newpassword" | base64
-```
+> **Note:** The superuser is only created on initial database setup. If the database already exists, changing these env vars won't update the existing user.
 
-3. Commit and push:
-```bash
-   git add apps/staging/linkding/linkding-secret.enc.yaml
-   git commit -m "Update Linkding superuser credentials"
-   git push
-```
+## See Also
 
-4. Restart Linkding (only needed if changing on existing deployment):
-```bash
-   kubectl rollout restart deployment/linkding -n linkding
-```
-
-**Note**: The superuser is only created on initial database setup. If the database already exists, changing these values won't update the existing user.
+- [Velero Documentation](https://velero.io/docs/)
+- [FluxCD Disaster Recovery](https://fluxcd.io/flux/guides/disaster-recovery/)
