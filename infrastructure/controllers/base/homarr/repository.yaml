@@ -1,8 +1,0 @@
-apiVersion: source.toolkit.fluxcd.io/v1
-kind: HelmRepository
-metadata:
-  name: homarr-labs
-  namespace: homarr
-spec:
-  interval: 1h
-  url: https://homarr-labs.github.io/charts/

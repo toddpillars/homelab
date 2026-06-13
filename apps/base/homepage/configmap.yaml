@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: homepage-config
+  namespace: homepage
+data:
+  settings.yaml: |
+    title: Homelab
+    theme: dark
+    color: slate
+    headerStyle: clean
+  services.yaml: |
+    - Media:
+        - Audiobookshelf:
+            href: https://abs.toddpillars.com
+            description: Audiobooks
+    - Tools:
+        - N8N:
+            href: https://n8n.toddpillars.com
+            description: Workflow automation
+        - LinkDing:
+            href: https://ld.toddpillars.com
+            description: Bookmarks
+        - Mealie:
+            href: https://mls.toddpillars.com
+            description: Recipes
+        - Open WebUI:
+            href: https://webui.toddpillars.com
+            description: LLM chat
+  bookmarks.yaml: |
+    []
+  widgets.yaml: |
+    - datetime:
+        text_size: xl
+        format:
+          timeStyle: short
+          dateStyle: short
+  kubernetes.yaml: |
+    mode: default
+  docker.yaml: |
+    {}

@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: homepage
+  namespace: homepage
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: homepage
+  template:
+    metadata:
+      labels:
+        app: homepage
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: homepage
+          image: ghcr.io/gethomepage/homepage:latest
+          ports:
+            - containerPort: 3000
+              name: http
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+          volumeMounts:
+            - name: config
+              mountPath: /app/config
+      volumes:
+        - name: config
+          configMap:
+            name: homepage-config
