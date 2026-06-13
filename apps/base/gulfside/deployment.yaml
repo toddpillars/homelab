@@ -58,7 +58,7 @@ spec:
           image: registry.k8s.io/git-sync/git-sync:v4.7.0
           env:
             - name: GITSYNC_REPO
-              value: "git@github.com:toddpillars/gulfside.git"
+              value: "git@github.com:toddpillars/gulfsideai.git"
             - name: GITSYNC_BRANCH
               value: "main"
             - name: GITSYNC_ROOT
