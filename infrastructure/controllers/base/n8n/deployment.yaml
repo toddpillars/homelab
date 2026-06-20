@@ -36,16 +36,22 @@ spec:
           value: "America/New_York"
         - name: N8N_METRICS
           value: "true"
+        - name: NODE_OPTIONS
+          value: "--max-old-space-size=896"
+        - name: EXECUTIONS_DATA_PRUNE
+          value: "true"
+        - name: EXECUTIONS_DATA_MAX_AGE
+          value: "168"
         volumeMounts:
         - name: n8n-data
           mountPath: /home/node/.n8n
         resources:
           requests:
-            memory: "256Mi"
-            cpu: "100m"
-          limits:
             memory: "512Mi"
-            cpu: "500m"
+            cpu: "200m"
+          limits:
+            memory: "1Gi"
+            cpu: "1"
       volumes:
       - name: n8n-data
         persistentVolumeClaim:
