@@ -4,3 +4,4 @@ namespace: hermes-agent
 resources:
   - ../../base/hermes-agent
   - hermes-secret.enc.yaml
+  - ingress.yaml

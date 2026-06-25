@@ -23,6 +23,4 @@ data:
         service: http://audiobookshelf.audiobookshelf.svc.cluster.local:3005
       - hostname: n8n.toddpillars.com
         service: http://n8n.naten.svc.cluster.local:5678
-      - hostname: hermes.toddpillars.com
-        service: http://hermes-agent.hermes-agent.svc.cluster.local:9119
       - service: http_status:404
