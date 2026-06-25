@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hermes-agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hermes-agent
+  template:
+    metadata:
+      labels:
+        app: hermes-agent
+    spec:
+      securityContext:
+        fsGroup: 1000
+        runAsUser: 1000
+        runAsGroup: 1000
+      containers:
+        - name: hermes-agent
+          image: nousresearch/hermes-agent:latest
+          command: ["gateway", "run"]
+          ports:
+            - containerPort: 8642
+            - containerPort: 9119
+          envFrom:
+            - secretRef:
+                name: hermes-agent-secret
+          resources:
+            requests:
+              memory: "2Gi"
+              cpu: "1"
+            limits:
+              memory: "4Gi"
+              cpu: "2"
+          volumeMounts:
+            - name: hermes-agent-data
+              mountPath: /opt/data
+          securityContext:
+            allowPrivilegeEscalation: false
+      volumes:
+        - name: hermes-agent-data
+          persistentVolumeClaim:
+            claimName: hermes-agent-data
