@@ -23,12 +23,12 @@
       "matchDatasources": ["helm"],
       "automerge": false,
       "automergeType": "pr"
+    },
+    {
+      "matchPackageNames": ["nousresearch/hermes-agent"],
+      "versioning": "docker",
+      "pinDigests": true,
+      "automerge": false
     }
   ]
-}
-{
-  "matchPackageNames": ["nousresearch/hermes-agent"],
-  "versioning": "docker",
-  "pinDigests": true,
-  "automerge": false
 }
