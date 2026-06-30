@@ -15,7 +15,7 @@ spec:
       containers:
         - name: hermes-agent
 #          image: nousresearch/hermes-agent:v2026.6.19
-          image: nousresearch/hermes-agent:latest@sha256:06411a75872cdaad35bca3316cbfccaa2ba37bc37c15f33ab21a40d7ffd7c197
+          image: nousresearch/hermes-agent:latest@sha256:a87b753d005f3edba6b84dda722db26f7d419bdef847f338401fd1f68a788f1d
           args: ["gateway", "run"]
           ports:
             - containerPort: 8642
