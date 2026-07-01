@@ -17,18 +17,13 @@
       "(^|/).*values\\.ya?ml$"
     ]
   },
+  "ignoreDeps": ["nousresearch/hermes-agent"],
   "packageRules": [
     {
       "description": "Auto-merge Helm chart updates",
       "matchDatasources": ["helm"],
       "automerge": false,
       "automergeType": "pr"
-    },
-    {
-      "matchPackageNames": ["nousresearch/hermes-agent"],
-      "versioning": "docker",
-      "pinDigests": true,
-      "automerge": false
     }
   ]
 }
