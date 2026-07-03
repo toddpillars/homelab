@@ -105,13 +105,13 @@ kubectl scale deployment <app> -n <ns> --replicas=1
 | audiobookshelf | audiobookshelf | Deployment | Audiobook server |
 | blog | blog | Deployment | Git-sourced blog; SSH key in `git-ssh-secret.enc.yaml` |
 | gulfside | gulfside | Deployment | Static site |
-| homarr | homarr | HelmRelease | Dashboard; DB encryption key in `db-encryption-secret.enc.yaml` |
+| homepage | homepage | Deployment | Dashboard; stateless (config via ConfigMap + initContainer, restart on config change) |
 | linkding | linkding | Deployment | Bookmarks; superuser credentials in `linkding-secret.enc.yaml` |
 | mealie | mealie | Deployment | Recipe manager |
-| cloudflared | cloudflared | Deployment | Cloudflare Tunnel (2 replicas); tunnel credentials in `tunnel-secret.enc.yaml` |
-| n8n | naten | Deployment | Workflow automation; exposed at n8n.toddpillars.com |
-| open-webui | open-webui | HelmRelease | LLM chat UI; connects to Ollama at 192.168.0.36:11434 |
-| renovate | renovate | CronJob | Dependency update bot |
+| cloudflared | cloudflared | Deployment | Cloudflare Tunnel (2 replicas); under `infrastructure/controllers/`; tunnel credentials in `tunnel-secret.enc.yaml` |
+| n8n | naten | Deployment | Workflow automation; under `infrastructure/controllers/`; exposed at n8n.toddpillars.com |
+| open-webui | open-webui | HelmRelease | LLM chat UI; under `infrastructure/controllers/`; connects to Ollama at 192.168.0.36:11434 |
+| renovate | renovate | CronJob | Dependency update bot; under `infrastructure/controllers/` |
 | kube-prometheus-stack | monitoring | HelmRelease | Prometheus + Grafana + Alertmanager |
 | Loki | monitoring | HelmRelease | Log aggregation; Grafana datasource configured |
 
@@ -129,6 +129,6 @@ External vLLM instance at `192.168.0.74:8000` is monitored via a headless Servic
 - Storage class is `local-path` for all PVCs
 - Apps run as user/group 1000 with `fsGroup: 1000`
 - Services are `ClusterIP`; external access goes through Cloudflare Tunnel via ingress
-- Ingress uses Traefik (implied by middleware resources in `apps/staging/homarr/`)
+- Ingress uses Traefik; some apps add Traefik middleware resources in their staging overlay
 - Renovate creates automated PRs for image and Helm chart updates; auto-merge is disabled
 - Domain: `*.toddpillars.com` exposed via Cloudflare Tunnel
