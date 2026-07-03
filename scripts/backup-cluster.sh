@@ -1,68 +1,62 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
 BACKUP_DIR="./backups/$(date +%Y%m%d-%H%M%S)"
+KEEP="${KEEP:-5}"   # number of backup snapshots to retain
+FAILURES=0
+
 mkdir -p "$BACKUP_DIR"
 
 echo "🔄 Starting cluster backup to $BACKUP_DIR"
 
-# Backup Linkding
-echo "📦 Backing up linkding..."
-kubectl get deployment -n linkding linkding -o yaml > "$BACKUP_DIR/linkding-deployment.yaml" 2>/dev/null || echo "⚠️  No deployment for linkding"
-kubectl get pvc -n linkding -o yaml > "$BACKUP_DIR/linkding-pvc.yaml" 2>/dev/null || echo "⚠️  No PVC for linkding"
+# Backup a single app's data volume(s) into a validated tar.gz.
+#   $1 app          - deployment / archive name
+#   $2 namespace
+#   $3 label-selector - passed to `kubectl get pod -l`; empty string = first pod
+#   $4.. paths       - one or more container paths to archive
+backup_app() {
+  local app="$1" namespace="$2" selector="$3"
+  shift 3
+  local paths=("$@")
+  local archive="$BACKUP_DIR/${app}-data.tar.gz"
 
-LINKDING_POD=$(kubectl get pod -n linkding -l app=linkding -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
-if [ -n "$LINKDING_POD" ]; then
-  kubectl exec -n linkding $LINKDING_POD -- tar czf - /etc/linkding/data 2>/dev/null \
-    > "$BACKUP_DIR/linkding-data.tar.gz" || echo "⚠️  Could not backup linkding data"
-  echo "✅ Linkding data backed up"
-else
-  echo "⚠️  No linkding pod found"
-fi
+  echo "📦 Backing up ${app} (${paths[*]})..."
+  kubectl get deployment -n "$namespace" "$app" -o yaml > "$BACKUP_DIR/${app}-deployment.yaml" 2>/dev/null \
+    || echo "⚠️  No deployment for ${app}"
+  kubectl get pvc -n "$namespace" -o yaml > "$BACKUP_DIR/${app}-pvc.yaml" 2>/dev/null \
+    || echo "⚠️  No PVC for ${app}"
 
-# Backup Mealie
-echo "📦 Backing up mealie..."
-kubectl get deployment -n mealie mealie -o yaml > "$BACKUP_DIR/mealie-deployment.yaml" 2>/dev/null || echo "⚠️  No deployment for mealie"
-kubectl get pvc -n mealie -o yaml > "$BACKUP_DIR/mealie-pvc.yaml" 2>/dev/null || echo "⚠️  No PVC for mealie"
+  local pod
+  if [ -n "$selector" ]; then
+    pod=$(kubectl get pod -n "$namespace" -l "$selector" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
+  else
+    pod=$(kubectl get pod -n "$namespace" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
+  fi
 
-MEALIE_POD=$(kubectl get pod -n mealie -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
-if [ -n "$MEALIE_POD" ]; then
-  kubectl exec -n mealie $MEALIE_POD -- tar czf - /app/data 2>/dev/null \
-    > "$BACKUP_DIR/mealie-data.tar.gz" || echo "⚠️  Could not backup mealie data"
-  echo "✅ Mealie data backed up"
-else
-  echo "⚠️  No mealie pod found"
-fi
+  if [ -z "$pod" ]; then
+    echo "❌ No pod found for ${app} — data NOT backed up"
+    FAILURES=$((FAILURES + 1))
+    return
+  fi
 
-# Backup Audiobookshelf (config and metadata only)
-# NOTE: /audiobooks is intentionally excluded — it can be large and should be
-# backed up separately (e.g. NAS sync or a dedicated media backup tool).
-echo "📦 Backing up audiobookshelf (config + metadata)..."
-kubectl get deployment -n audiobookshelf audiobookshelf -o yaml > "$BACKUP_DIR/audiobookshelf-deployment.yaml" 2>/dev/null || echo "⚠️  No deployment for audiobookshelf"
-kubectl get pvc -n audiobookshelf -o yaml > "$BACKUP_DIR/audiobookshelf-pvc.yaml" 2>/dev/null || echo "⚠️  No PVC for audiobookshelf"
+  # `|| true` so set -e doesn't abort; we validate the archive explicitly below.
+  kubectl exec -n "$namespace" "$pod" -- tar czf - "${paths[@]}" > "$archive" 2>/dev/null || true
 
-ABS_POD=$(kubectl get pod -n audiobookshelf -l app=audiobookshelf -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
-if [ -n "$ABS_POD" ]; then
-  kubectl exec -n audiobookshelf $ABS_POD -- tar czf - /config /metadata 2>/dev/null \
-    > "$BACKUP_DIR/audiobookshelf-data.tar.gz" || echo "⚠️  Could not backup audiobookshelf data"
-  echo "✅ Audiobookshelf config + metadata backed up"
-else
-  echo "⚠️  No audiobookshelf pod found"
-fi
+  if [ ! -s "$archive" ] || ! tar tzf "$archive" >/dev/null 2>&1; then
+    echo "❌ ${app} backup is empty or corrupt ($archive)"
+    FAILURES=$((FAILURES + 1))
+    return
+  fi
 
-# Backup n8n
-echo "📦 Backing up n8n..."
-kubectl get deployment -n naten n8n -o yaml > "$BACKUP_DIR/n8n-deployment.yaml" 2>/dev/null || echo "⚠️  No deployment for n8n"
-kubectl get pvc -n naten -o yaml > "$BACKUP_DIR/n8n-pvc.yaml" 2>/dev/null || echo "⚠️  No PVC for n8n"
+  echo "✅ ${app} data backed up ($(du -h "$archive" | cut -f1))"
+}
 
-N8N_POD=$(kubectl get pod -n naten -l app=n8n -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
-if [ -n "$N8N_POD" ]; then
-  kubectl exec -n naten $N8N_POD -- tar czf - /home/node/.n8n 2>/dev/null \
-    > "$BACKUP_DIR/n8n-data.tar.gz" || echo "⚠️  Could not backup n8n data"
-  echo "✅ n8n data backed up"
-else
-  echo "⚠️  No n8n pod found"
-fi
+# NOTE: audiobookshelf /audiobooks is intentionally excluded — it can be large
+# and should be backed up separately (e.g. NAS sync or a dedicated media tool).
+backup_app linkding       linkding       "app=linkding"       /etc/linkding/data
+backup_app mealie         mealie         ""                    /app/data
+backup_app audiobookshelf audiobookshelf "app=audiobookshelf" /config /metadata
+backup_app n8n            naten          "app=n8n"            /home/node/.n8n
 
 # Backup Flux state
 echo "📦 Backing up Flux configuration..."
@@ -70,9 +64,14 @@ kubectl get gitrepository -n flux-system -o yaml > "$BACKUP_DIR/flux-gitrepo.yam
 kubectl get kustomization -n flux-system -o yaml > "$BACKUP_DIR/flux-kustomizations.yaml"
 kubectl get helmrelease -A -o yaml > "$BACKUP_DIR/helmreleases.yaml"
 
-# Backup SOPS secret (encrypted in git, but backup just in case)
+# Backup SOPS secret (encrypted in git, but backup just in case).
+# Contains the AGE private key in plaintext — lock down permissions.
 echo "🔐 Backing up SOPS key..."
-kubectl get secret sops-age -n flux-system -o yaml > "$BACKUP_DIR/sops-age-secret.yaml" 2>/dev/null || echo "⚠️  No sops-age secret found"
+if kubectl get secret sops-age -n flux-system -o yaml > "$BACKUP_DIR/sops-age-secret.yaml" 2>/dev/null; then
+  chmod 600 "$BACKUP_DIR/sops-age-secret.yaml"
+else
+  echo "⚠️  No sops-age secret found"
+fi
 
 # Save cluster info
 echo "ℹ️  Saving cluster info..."
@@ -80,12 +79,31 @@ kubectl get nodes -o yaml > "$BACKUP_DIR/nodes.yaml"
 kubectl top nodes > "$BACKUP_DIR/node-resources.txt" 2>/dev/null || echo "metrics-server not available" > "$BACKUP_DIR/node-resources.txt"
 kubectl get pvc -A -o yaml > "$BACKUP_DIR/all-pvcs.yaml"
 
-echo ""
-echo "✅ Backup complete: $BACKUP_DIR"
+# Prune old snapshots, keeping the most recent $KEEP (dirs are lexically sortable).
+# Portable to macOS bash 3.2 / BSD head (no mapfile, no negative head counts).
+echo "🧹 Pruning old backups (keeping last ${KEEP})..."
+SNAPSHOTS=$(ls -1d ./backups/*/ 2>/dev/null | sort)
+TOTAL=$(printf '%s' "$SNAPSHOTS" | grep -c '/' || true)
+if [ "$TOTAL" -gt "$KEEP" ]; then
+  printf '%s\n' "$SNAPSHOTS" | head -n "$((TOTAL - KEEP))" | while IFS= read -r dir; do
+    [ -n "$dir" ] || continue
+    echo "   removing $dir"
+    rm -rf "$dir"
+  done
+fi
+
 echo ""
 echo "📋 Backup contents:"
 ls -lh "$BACKUP_DIR" | grep -E "\.tar\.gz|\.yaml"
 echo ""
-echo "📊 Backup sizes:"
+echo "📊 Backup size:"
 du -sh "$BACKUP_DIR"
-du -sh "$BACKUP_DIR"/*.tar.gz 2>/dev/null || echo "No data archives found"
+
+if [ "$FAILURES" -gt 0 ]; then
+  echo ""
+  echo "❌ Backup completed with ${FAILURES} failure(s) — review output above."
+  exit 1
+fi
+
+echo ""
+echo "✅ Backup complete: $BACKUP_DIR"

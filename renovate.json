@@ -17,7 +17,6 @@
       "(^|/).*values\\.ya?ml$"
     ]
   },
-  "ignoreDeps": ["nousresearch/hermes-agent"],
   "packageRules": [
     {
       "description": "Auto-merge Helm chart updates",
