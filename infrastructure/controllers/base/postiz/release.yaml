@@ -43,18 +43,17 @@ spec:
       - name: postiz-secrets-ext
 
     env:
-      FRONTEND_URL: "http://postiz.toddpillars.com"
-      NEXT_PUBLIC_BACKEND_URL: "http://postiz.toddpillars.com/api"
+      # HTTPS via a trusted Let's Encrypt cert on the ingress. LinkedIn (and most
+      # OAuth providers) require an HTTPS redirect URL, which Postiz derives from
+      # FRONTEND_URL. Secure cookies now work, so NOT_SECURED is removed.
+      FRONTEND_URL: "https://postiz.toddpillars.com"
+      NEXT_PUBLIC_BACKEND_URL: "https://postiz.toddpillars.com/api"
       BACKEND_INTERNAL_URL: "http://localhost:3000"
       IS_GENERAL: "true"
       STORAGE_PROVIDER: "local"
       UPLOAD_DIRECTORY: "/uploads"
       NEXT_PUBLIC_UPLOAD_STATIC_DIRECTORY: "/uploads"
       DISABLE_REGISTRATION: "false"
-      # We serve over plain HTTP on the LAN. Without this, Postiz issues the auth
-      # cookie as Secure/SameSite=None, which browsers drop over HTTP → login
-      # silently bounces back to /auth. Required until/unless we add TLS.
-      NOT_SECURED: "true"
       TEMPORAL_ADDRESS: "postiz-temporal:7233"
 
     # Persist uploads to a PVC instead of the default emptyDir.
