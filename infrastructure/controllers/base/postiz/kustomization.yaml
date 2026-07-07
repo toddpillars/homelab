@@ -7,6 +7,7 @@ resources:
   - postgres.yaml
   - valkey.yaml
   - temporal.yaml
+  - temporal-ui.yaml
   - pvc.yaml
   - release.yaml
 # NOTE: ./chart is deliberately NOT a kustomize resource — it is a Helm chart
