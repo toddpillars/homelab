@@ -45,7 +45,7 @@ spec:
     spec:
       containers:
         - name: postgres
-          image: public.ecr.aws/docker/library/postgres:16-alpine
+          image: public.ecr.aws/docker/library/postgres:18-alpine
           imagePullPolicy: IfNotPresent
           ports:
             - name: postgres
