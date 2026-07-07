@@ -1,0 +1,28 @@
+apiVersion: v2
+name: postiz-app
+description: A Social Media Scheduling App (requires external Temporal service)
+type: application
+version: 1.1.0
+appVersion: "v2.13.0"
+maintainers:
+  - name: jonathan-irvin
+    email: offendingcommit@gmail.com
+    url: https://linktr.ee/offendingcommit
+  - name: jamesread
+    email: contact@jread.com
+    url: http://jread.com
+keywords:
+  - social media
+  - marketing
+  - scheduling
+  - queue
+  - workflow
+home: https://postiz.com
+sources:
+  - https://github.com/gitroomhq/postiz-app
+  - https://github.com/gitroomhq/postiz-helmchart
+# NOTE: The upstream chart bundled Bitnami postgresql/valkey subcharts. They are
+# removed here on purpose — Postgres, Valkey, and Temporal are self-hosted as
+# plain manifests in this directory so we never pull the retired/rate-limited
+# Bitnami Docker Hub images (see postiz-helmchart issue #17). The chart is run
+# with postgresql.enabled=false and redis.enabled=false.

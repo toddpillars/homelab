@@ -1,0 +1,141 @@
+{{/*
+Expand the name of the chart.
+*/}}
+{{- define "postiz.name" -}}
+{{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
+Create a default fully qualified app name.
+We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
+If release name contains chart name it will be used as a full name.
+*/}}
+{{- define "postiz.fullname" -}}
+{{- if .Values.fullnameOverride }}
+{{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
+{{- else }}
+{{- $name := default .Chart.Name .Values.nameOverride }}
+{{- if contains $name .Release.Name }}
+{{- .Release.Name | trunc 63 | trimSuffix "-" }}
+{{- else }}
+{{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{/*
+Create chart name and version as used by the chart label.
+*/}}
+{{- define "postiz.chart" -}}
+{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
+Common labels
+*/}}
+{{- define "postiz.labels" -}}
+helm.sh/chart: {{ include "postiz.chart" . }}
+{{ include "postiz.selectorLabels" . }}
+{{- if .Chart.AppVersion }}
+app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+{{- end }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- end }}
+
+{{/*
+Selector labels
+*/}}
+{{- define "postiz.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "postiz.name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}
+
+{{/*
+Create the name of the service account to use
+*/}}
+{{- define "postiz.serviceAccountName" -}}
+{{- if .Values.serviceAccount.create }}
+{{- default (include "postiz.fullname" .) .Values.serviceAccount.name }}
+{{- else }}
+{{- default "default" .Values.serviceAccount.name }}
+{{- end }}
+{{- end }}
+
+{{/*
+Generate PostgreSQL host (respects fullnameOverride)
+*/}}
+{{- define "postiz.postgresqlHost" -}}
+{{- printf "%s-postgresql" (include "postiz.fullname" .) -}}
+{{- end }}
+
+{{/*
+Generate Redis/Valkey host (respects fullnameOverride)
+*/}}
+{{- define "postiz.redisHost" -}}
+{{- printf "%s-redis-primary" (include "postiz.fullname" .) -}}
+{{- end }}
+
+{{/*
+Generate PostgreSQL connection URL with properly encoded credentials
+*/}}
+{{- define "postiz.databaseUrl" -}}
+{{- if .Values.postgresql.enabled -}}
+{{- $user := .Values.postgresql.auth.username -}}
+{{- $password := .Values.postgresql.auth.password -}}
+{{- $database := .Values.postgresql.auth.database -}}
+{{- $host := include "postiz.postgresqlHost" . -}}
+{{- $port := .Values.postgresql.service.ports.postgresql | default 5432 -}}
+{{- printf "postgresql://%s:%s@%s:%d/%s" $user $password $host ($port | int) $database -}}
+{{- else -}}
+{{- .Values.secrets.DATABASE_URL -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+Generate Redis/Valkey connection URL with properly encoded credentials
+*/}}
+{{- define "postiz.redisUrl" -}}
+{{- if .Values.redis.enabled -}}
+{{- $password := .Values.redis.auth.password | urlquery -}}
+{{- $host := include "postiz.redisHost" . -}}
+{{- $port := .Values.redis.master.service.ports.redis | default 6379 -}}
+{{- if $password -}}
+{{- printf "redis://default:%s@%s:%d" $password $host ($port | int) -}}
+{{- else -}}
+{{- printf "redis://default@%s:%d" $host ($port | int) -}}
+{{- end -}}
+{{- else -}}
+{{- .Values.secrets.REDIS_URL -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+Get Temporal frontend address from environment variables (required)
+*/}}
+{{- define "postiz.temporalAddress" -}}
+{{- required "ERROR: env.TEMPORAL_ADDRESS is required. Please configure your Temporal service address.\n\nExamples:\n  - Same cluster (temporal namespace): temporal-frontend.temporal.svc.cluster.local:7233\n  - Temporal Cloud: your-namespace.tmprl.cloud:7233\n  - External Temporal: temporal.example.com:7233" .Values.env.TEMPORAL_ADDRESS -}}
+{{- end }}
+
+{{/*
+Get final DATABASE_URL (either auto-generated or from values)
+Used by Secret template for simplified logic
+*/}}
+{{- define "postiz.secretDatabaseUrl" -}}
+{{- if and (not .Values.secrets.DATABASE_URL) .Values.secrets.autoGenerate.enabled .Values.secrets.autoGenerate.database .Values.postgresql.enabled }}
+{{- include "postiz.databaseUrl" . }}
+{{- else }}
+{{- .Values.secrets.DATABASE_URL }}
+{{- end }}
+{{- end }}
+
+{{/*
+Get final REDIS_URL (either auto-generated or from values)
+Used by Secret template for simplified logic
+*/}}
+{{- define "postiz.secretRedisUrl" -}}
+{{- if and (not .Values.secrets.REDIS_URL) .Values.secrets.autoGenerate.enabled .Values.secrets.autoGenerate.redis .Values.redis.enabled }}
+{{- include "postiz.redisUrl" . }}
+{{- else }}
+{{- .Values.secrets.REDIS_URL }}
+{{- end }}
+{{- end }}

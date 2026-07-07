@@ -1,0 +1,266 @@
+# IMPORTANT: This chart requires Temporal to be deployed separately.
+# Set env.TEMPORAL_ADDRESS to your Temporal frontend service address.
+#
+# NOTE: All service hostnames follow the pattern: {fullname}-{service-name}
+# - PostgreSQL: {fullname}-postgresql
+# - Redis/Valkey: {fullname}-redis-primary
+# Where {fullname} = fullnameOverride (if set) or {release-name}-postiz-app
+# Change fullnameOverride to customize this pattern for the entire release
+
+replicaCount: 1
+
+image:
+  repository: ghcr.io/gitroomhq/postiz-app
+  pullPolicy: IfNotPresent
+  tag: "" # If empty, will use appVersion from Chart.yaml (v2.13.0)
+
+imagePullSecrets: []
+nameOverride: ""
+# Override the fully qualified app name (affects all service hostnames)
+# Defaults to: {release-name}-postiz-app or just {release-name} if it contains "postiz-app"
+# Set this to customize the name prefix for all services
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+# Annotations to add to the Deployment resource metadata (not pod template)
+deploymentAnnotations: {}
+# Annotations to add to the ConfigMap resource
+configMapAnnotations: {}
+# Annotations to add to the Secret resource
+secretAnnotations: {}
+# Annotations to add to the Service resource
+serviceAnnotations: {}
+
+podSecurityContext: {}
+
+securityContext: {}
+
+service:
+  type: ClusterIP
+  port: 80
+  additionalPorts: []
+
+ingress:
+  enabled: false # Disabled by default
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: Prefix
+          port: 80
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+  extraRules: []
+
+# HTTPRoute configuration (Kubernetes Gateway API)
+# Requires Gateway API CRDs to be installed in the cluster
+httproute:
+  enabled: false # Disabled by default
+  annotations: {}
+  # Parent references to which this HTTPRoute should attach
+  # For cross-namespace Gateway references, the Gateway's namespace must be specified
+  # and the Gateway must allow cross-namespace route binding
+  # Example (same namespace):
+  # parentRefs:
+  #   - name: my-gateway
+  # Example (cross-namespace):
+  # parentRefs:
+  #   - name: my-gateway
+  #     namespace: gateway-namespace
+  parentRefs: []
+  # Hostnames that this HTTPRoute should match
+  # Example:
+  # hostnames:
+  #   - example.com
+  #   - www.example.com
+  hostnames: []
+  # HTTPRoute rules for advanced routing
+  # If empty, a default rule routing all traffic to the service will be used
+  # Example:
+  # rules:
+  #   - matches:
+  #       - path:
+  #           type: PathPrefix
+  #           value: /api
+  #     backendRefs:
+  #       - name: postiz-app
+  #         port: 80
+  rules: []
+
+resources: {}
+
+extraContainers: []
+
+extraVolumes: []
+extraVolumeMounts: []
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# PostgreSQL configuration
+postgresql:
+  enabled: true
+  auth:
+    username: postiz
+    password: postiz-password
+    database: postiz
+  service:
+    ports:
+      postgresql: 5432
+
+# Redis/Valkey configuration
+# Note: As of v1.1.0, uses Valkey (Redis fork) for Redis-compatible caching
+redis:
+  enabled: true
+  auth:
+    password: postiz-redis-password
+  primary:
+    service:
+      ports:
+        redis: 6379
+
+# Environment variables (non-sensitive)
+# For a complete list of all available environment variables, see:
+# https://github.com/gitroomhq/postiz-app/blob/main/docker-compose.yaml
+env:
+  # Core URLs
+  FRONTEND_URL: "http://localhost:4200"
+  NEXT_PUBLIC_BACKEND_URL: "http://localhost:3000"
+  BACKEND_INTERNAL_URL: "http://backend:3000"
+
+  # File uploads
+  UPLOAD_DIRECTORY: ""
+  NEXT_PUBLIC_UPLOAD_STATIC_DIRECTORY: ""
+
+  # Application settings
+  NX_ADD_PLUGINS: "false"
+  IS_GENERAL: "true"
+
+  # REQUIRED: Temporal workflow engine service address
+  # Format: {host}:{port}
+  # Examples:
+  #   - Same cluster, temporal namespace: "temporal-frontend.temporal.svc.cluster.local:7233"
+  #   - Temporal Cloud: "your-namespace.tmprl.cloud:7233"
+  #   - External: "temporal.example.com:7233"
+  TEMPORAL_ADDRESS: ""
+
+  # Additional environment variables can be added here:
+  # STORAGE_PROVIDER: "" # Options: local, cloudflare
+  # DISABLE_REGISTRATION: "false"
+  # POSTIZ_OAUTH_URL: ""
+  # POSTIZ_OAUTH_CLIENT_ID: ""
+  # POSTIZ_OAUTH_CLIENT_SECRET: ""
+  # OPENAI_API_KEY: ""
+  # STRIPE_PUBLISHABLE_KEY: ""
+  # STRIPE_SECRET_KEY: ""
+  # API_LIMIT: ""
+
+# Sensitive environment variables (to be stored in Secrets)
+# For a complete list of all available secrets, see:
+# https://github.com/gitroomhq/postiz-app/blob/main/docker-compose.yaml
+secrets:
+  # Auto-generate connection strings for internal dependencies
+  autoGenerate:
+    enabled: true
+    database: true
+    redis: true
+
+  # Core Infrastructure (auto-generated if dependencies enabled)
+  DATABASE_URL: "" # PostgreSQL connection string
+  REDIS_URL: "" # Redis/Valkey connection string
+  JWT_SECRET: "" # JWT authentication secret
+
+  # Social Media API Keys - X/Twitter
+  X_API_KEY: ""
+  X_API_SECRET: ""
+
+  # Social Media API Keys - LinkedIn
+  LINKEDIN_CLIENT_ID: ""
+  LINKEDIN_CLIENT_SECRET: ""
+
+  # Social Media API Keys - Reddit
+  REDDIT_CLIENT_ID: ""
+  REDDIT_CLIENT_SECRET: ""
+
+  # Social Media API Keys - GitHub
+  GITHUB_CLIENT_ID: ""
+  GITHUB_CLIENT_SECRET: ""
+
+  # Email Service (Resend)
+  RESEND_API_KEY: ""
+
+  # Cloud Storage - Cloudflare R2
+  CLOUDFLARE_ACCOUNT_ID: ""
+  CLOUDFLARE_ACCESS_KEY: ""
+  CLOUDFLARE_SECRET_ACCESS_KEY: ""
+  CLOUDFLARE_BUCKETNAME: ""
+  CLOUDFLARE_BUCKET_URL: ""
+
+  # Additional secrets that can be added:
+  # CLOUDFLARE_REGION: ""      # R2 region
+  # STORAGE_PROVIDER: ""        # Storage backend
+  # THREADS_ACCESS_TOKEN: ""
+  # FACEBOOK_ACCESS_TOKEN: ""
+  # YOUTUBE_API_KEY: ""
+  # TIKTOK_CLIENT_ID: ""
+  # TIKTOK_CLIENT_SECRET: ""
+  # PINTEREST_ACCESS_TOKEN: ""
+  # DRIBBBLE_ACCESS_TOKEN: ""
+  # DISCORD_TOKEN: ""
+  # SLACK_TOKEN: ""
+  # MASTODON_ACCESS_TOKEN: ""
+  # BLUESKY_PASSWORD: ""
+  # OPENAI_API_KEY: ""
+  # STRIPE_PUBLISHABLE_KEY: ""
+  # STRIPE_SECRET_KEY: ""
+
+# Additional external secrets to inject (optional)
+# These secrets must exist in the cluster before installing the chart
+extraSecrets: []
+  # - name: "vault-oauth-secrets"
+  # - name: "external-api-keys"
+
+# Additional Kubernetes manifests to deploy alongside the chart
+# These are rendered as raw YAML strings, without Helm templating
+# Useful for deploying additional resources like ConfigMaps, ServiceMonitors, etc.
+# Example:
+# extraManifests:
+#   - |
+#     apiVersion: v1
+#     kind: ConfigMap
+#     metadata:
+#       name: custom-config
+#     data:
+#       key: value
+#   - |
+#     apiVersion: monitoring.coreos.com/v1
+#     kind: ServiceMonitor
+#     metadata:
+#       name: postiz-monitor
+#     spec:
+#       selector:
+#         matchLabels:
+#           app: postiz
+#       endpoints:
+#         - port: metrics
+extraManifests: []

@@ -1,0 +1,20 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: postiz
+  namespace: postiz
+spec:
+  ingressClassName: traefik
+  rules:
+    # LAN-only host (resolved by local DNS to the Traefik ingress). Deliberately
+    # not added to the cloudflared tunnel, so Postiz is not exposed externally.
+    - host: postiz.toddpillars.com
+      http:
+        paths:
+          - backend:
+              service:
+                name: postiz-app
+                port:
+                  number: 80
+            path: /
+            pathType: Prefix
