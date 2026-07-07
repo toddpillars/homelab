@@ -1,0 +1,9 @@
+# GitGuardian / ggshield configuration.
+# All secrets in this repo are SOPS+AGE encrypted at rest as *.enc.yaml files.
+# The high-entropy ciphertext in those files trips secret-detection false
+# positives, so they are excluded from scanning. Plaintext secrets must never be
+# committed — only encrypted *.enc.yaml.
+version: 2
+secret:
+  ignored-paths:
+    - "**/*.enc.yaml"

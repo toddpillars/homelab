@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postiz-temporal
+  namespace: postiz
+  labels:
+    app: postiz-temporal
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: postiz-temporal
+  template:
+    metadata:
+      labels:
+        app: postiz-temporal
+    spec:
+      containers:
+        - name: temporal
+          # auto-setup bootstraps the Temporal schema in the pre-created
+          # temporal / temporal_visibility Postgres databases and registers the
+          # "default" namespace on first start. Required by Postiz v2.
+          image: docker.io/temporalio/auto-setup:1.29.7
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: grpc
+              containerPort: 7233
+          env:
+            - name: DB
+              value: postgres12
+            - name: POSTGRES_SEEDS
+              value: postiz-postgres
+            - name: DB_PORT
+              value: "5432"
+            - name: POSTGRES_USER
+              value: postiz
+            - name: POSTGRES_PWD
+              valueFrom:
+                secretKeyRef:
+                  name: postiz-postgres
+                  key: POSTGRES_PASSWORD
+            - name: DBNAME
+              value: temporal
+            - name: VISIBILITY_DBNAME
+              value: temporal_visibility
+            - name: SKIP_ADD_CUSTOM_SEARCH_ATTRIBUTES
+              value: "true"
+          readinessProbe:
+            tcpSocket:
+              port: grpc
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          livenessProbe:
+            tcpSocket:
+              port: grpc
+            initialDelaySeconds: 90
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postiz-temporal
+  namespace: postiz
+  labels:
+    app: postiz-temporal
+spec:
+  type: ClusterIP
+  selector:
+    app: postiz-temporal
+  ports:
+    - name: grpc
+      port: 7233
+      targetPort: grpc

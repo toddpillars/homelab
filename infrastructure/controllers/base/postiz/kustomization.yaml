@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - postgres-secret.enc.yaml
+  - postiz-secrets-ext.enc.yaml
+  - postgres.yaml
+  - valkey.yaml
+  - temporal.yaml
+  - pvc.yaml
+  - release.yaml
+# NOTE: ./chart is deliberately NOT a kustomize resource — it is a Helm chart
+# consumed by release.yaml via the flux-system GitRepository source.

@@ -1,0 +1,70 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: postiz
+  namespace: postiz
+spec:
+  interval: 10m
+  chart:
+    spec:
+      # First chart in this repo sourced from git rather than a HelmRepository:
+      # the vendored PR #19 chart lives in-tree, so it is pinned and needs no
+      # external chart repo. Bitnami subcharts were removed from Chart.yaml.
+      chart: ./infrastructure/controllers/base/postiz/chart
+      sourceRef:
+        kind: GitRepository
+        name: flux-system
+        namespace: flux-system
+      interval: 10m
+  values:
+    fullnameOverride: postiz-app
+
+    image:
+      repository: ghcr.io/gitroomhq/postiz-app
+      tag: v2.13.0
+
+    # Bundled Bitnami datastores disabled — we self-host Postgres, Valkey, and
+    # Temporal as plain manifests in this namespace (see postgres.yaml /
+    # valkey.yaml / temporal.yaml).
+    postgresql:
+      enabled: false
+    redis:
+      enabled: false
+
+    secrets:
+      autoGenerate:
+        enabled: false
+        database: false
+        redis: false
+      # All sensitive values are injected via extraSecrets (postiz-secrets-ext),
+      # kept SOPS-encrypted. Nothing sensitive is set here in plaintext.
+
+    extraSecrets:
+      - name: postiz-secrets-ext
+
+    env:
+      FRONTEND_URL: "http://postiz.toddpillars.com"
+      NEXT_PUBLIC_BACKEND_URL: "http://postiz.toddpillars.com/api"
+      BACKEND_INTERNAL_URL: "http://localhost:3000"
+      IS_GENERAL: "true"
+      STORAGE_PROVIDER: "local"
+      UPLOAD_DIRECTORY: "/uploads"
+      NEXT_PUBLIC_UPLOAD_STATIC_DIRECTORY: "/uploads"
+      DISABLE_REGISTRATION: "false"
+      TEMPORAL_ADDRESS: "postiz-temporal:7233"
+
+    # Persist uploads to a PVC instead of the default emptyDir.
+    extraVolumes:
+      - name: uploads-volume
+        persistentVolumeClaim:
+          claimName: postiz-uploads
+    extraVolumeMounts:
+      - name: uploads-volume
+        mountPath: /uploads
+
+    # Ingress is handled by a separate Traefik Ingress in the staging overlay
+    # (LAN-only). Chart-managed ingress/httproute stay disabled.
+    ingress:
+      enabled: false
+    httproute:
+      enabled: false
