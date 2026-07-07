@@ -111,6 +111,7 @@ kubectl scale deployment <app> -n <ns> --replicas=1
 | cloudflared | cloudflared | Deployment | Cloudflare Tunnel (2 replicas); under `infrastructure/controllers/`; tunnel credentials in `tunnel-secret.enc.yaml` |
 | n8n | naten | Deployment | Workflow automation; under `infrastructure/controllers/`; exposed at n8n.toddpillars.com |
 | open-webui | open-webui | HelmRelease | LLM chat UI; under `infrastructure/controllers/`; connects to Ollama at 192.168.0.36:11434 |
+| postiz | postiz | HelmRelease | Social-media scheduler (v2); under `infrastructure/controllers/`. Vendored PR #19 chart in `base/postiz/chart/`, sourced from the `flux-system` GitRepository (Bitnami subcharts removed). Self-hosted Postgres + Valkey + Temporal (`auto-setup`, required by v2) + Temporal UI as plain manifests. Secrets in `postgres-secret.enc.yaml` / `postiz-secrets-ext.enc.yaml`. LAN-only at postiz.toddpillars.com (console at temporal.toddpillars.com); not in the cloudflared tunnel. Datastores + Temporal scraped via ServiceMonitors in `monitoring`. See `docs/operations/postiz.md` |
 | renovate | renovate | CronJob | Dependency update bot; under `infrastructure/controllers/` |
 | kube-prometheus-stack | monitoring | HelmRelease | Prometheus + Grafana + Alertmanager |
 | Loki | monitoring | HelmRelease | Log aggregation; Grafana datasource configured |
