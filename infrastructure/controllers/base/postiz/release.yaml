@@ -21,7 +21,30 @@ spec:
 
     image:
       repository: ghcr.io/gitroomhq/postiz-app
+      # PINNED: the LinkedIn scope patch below (command/args) targets the provider
+      # file in this image. Re-verify the sed after any image bump — the scope
+      # list or file path can change across Postiz versions.
       tag: v2.21.10
+
+    # LinkedIn scope patch: Postiz's personal-LinkedIn provider hard-requests
+    # scopes we cannot grant — r_basicprofile (deprecated/ungrantable, superseded
+    # by OpenID `profile`) and the r_/w_/rw_organization_* scopes (need LinkedIn's
+    # Community Management API, only for company pages). LinkedIn rejects the whole
+    # request with unauthorized_scope_error. We strip those four lines from both
+    # compiled provider copies before the app starts, leaving openid/profile/
+    # w_member_social so personal-profile posting works. Then run the image's
+    # original entrypoint (`nginx && pnpm run pm2`).
+    command:
+      - /bin/sh
+      - -c
+    args:
+      - |
+        for f in \
+          /app/apps/backend/dist/libraries/nestjs-libraries/src/integrations/social/linkedin.provider.js \
+          /app/apps/orchestrator/dist/libraries/nestjs-libraries/src/integrations/social/linkedin.provider.js; do
+          [ -f "$f" ] && sed -i "/'r_basicprofile',/d;/'rw_organization_admin',/d;/'w_organization_social',/d;/'r_organization_social',/d" "$f"
+        done
+        cd /app && nginx && exec pnpm run pm2
 
     # Bundled Bitnami datastores disabled — we self-host Postgres, Valkey, and
     # Temporal as plain manifests in this namespace (see postgres.yaml /
