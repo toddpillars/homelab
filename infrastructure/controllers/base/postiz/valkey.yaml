@@ -20,7 +20,7 @@ spec:
       containers:
         - name: valkey
           # Valkey (Redis-compatible fork) pulled from ghcr to avoid Docker Hub.
-          image: ghcr.io/valkey-io/valkey:8-alpine
+          image: ghcr.io/valkey-io/valkey:9-alpine
           imagePullPolicy: IfNotPresent
           command: ["valkey-server", "--save", "60", "1", "--appendonly", "yes"]
           ports:
