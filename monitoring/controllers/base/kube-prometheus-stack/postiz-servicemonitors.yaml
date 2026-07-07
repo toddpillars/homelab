@@ -1,0 +1,59 @@
+# Scrape the Postiz stack's metrics endpoints. These live in the monitoring
+# namespace (carrying the release label Prometheus selects on) and reach across
+# to the postiz namespace via namespaceSelector.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: postiz-temporal
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+spec:
+  namespaceSelector:
+    matchNames:
+      - postiz
+  selector:
+    matchLabels:
+      app: postiz-temporal
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 30s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: postiz-postgres
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+spec:
+  namespaceSelector:
+    matchNames:
+      - postiz
+  selector:
+    matchLabels:
+      app: postiz-postgres
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 30s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: postiz-redis
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+spec:
+  namespaceSelector:
+    matchNames:
+      - postiz
+  selector:
+    matchLabels:
+      app: postiz-redis
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 30s

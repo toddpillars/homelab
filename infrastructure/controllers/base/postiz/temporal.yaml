@@ -27,7 +27,13 @@ spec:
           ports:
             - name: grpc
               containerPort: 7233
+            - name: metrics
+              containerPort: 9090
           env:
+            # Enable the Prometheus metrics endpoint (single-process auto-setup
+            # exposes one endpoint covering all Temporal roles).
+            - name: PROMETHEUS_ENDPOINT
+              value: 0.0.0.0:9090
             - name: DB
               value: postgres12
             - name: POSTGRES_SEEDS
@@ -79,3 +85,6 @@ spec:
     - name: grpc
       port: 7233
       targetPort: grpc
+    - name: metrics
+      port: 9090
+      targetPort: metrics
