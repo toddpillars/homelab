@@ -51,6 +51,10 @@ spec:
       UPLOAD_DIRECTORY: "/uploads"
       NEXT_PUBLIC_UPLOAD_STATIC_DIRECTORY: "/uploads"
       DISABLE_REGISTRATION: "false"
+      # We serve over plain HTTP on the LAN. Without this, Postiz issues the auth
+      # cookie as Secure/SameSite=None, which browsers drop over HTTP → login
+      # silently bounces back to /auth. Required until/unless we add TLS.
+      NOT_SECURED: "true"
       TEMPORAL_ADDRESS: "postiz-temporal:7233"
 
     # Persist uploads to a PVC instead of the default emptyDir.
