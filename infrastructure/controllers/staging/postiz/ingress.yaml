@@ -5,6 +5,13 @@ metadata:
   namespace: postiz
 spec:
   ingressClassName: traefik
+  tls:
+    # Trusted Let's Encrypt cert (issued via Cloudflare DNS-01, see
+    # base/postiz/certificate.yaml). Required because LinkedIn OAuth only
+    # accepts an HTTPS redirect URL.
+    - hosts:
+        - postiz.toddpillars.com
+      secretName: postiz-tls
   rules:
     # LAN-only host (resolved by local DNS to the Traefik ingress). Deliberately
     # not added to the cloudflared tunnel, so Postiz is not exposed externally.
