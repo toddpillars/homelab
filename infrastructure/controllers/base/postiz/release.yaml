@@ -21,7 +21,7 @@ spec:
 
     image:
       repository: ghcr.io/gitroomhq/postiz-app
-      tag: v2.13.0
+      tag: v2.21.10
 
     # Bundled Bitnami datastores disabled — we self-host Postgres, Valkey, and
     # Temporal as plain manifests in this namespace (see postgres.yaml /
