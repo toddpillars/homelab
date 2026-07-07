@@ -23,6 +23,11 @@
       "matchDatasources": ["helm"],
       "automerge": false,
       "automergeType": "pr"
+    },
+    {
+      "description": "Group all Postiz-stack image updates into a single PR",
+      "matchFileNames": ["infrastructure/controllers/base/postiz/**"],
+      "groupName": "postiz-stack"
     }
   ]
 }
