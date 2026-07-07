@@ -16,6 +16,10 @@ spec:
         name: flux-system
         namespace: flux-system
       interval: 10m
+      # Re-package the chart on every git revision, not only when Chart.yaml's
+      # version changes. Required because we edit this vendored chart in place
+      # (e.g. the LinkedIn scope patch) without bumping the chart version.
+      reconcileStrategy: Revision
   values:
     fullnameOverride: postiz-app
 
