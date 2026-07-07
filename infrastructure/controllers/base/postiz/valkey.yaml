@@ -45,6 +45,28 @@ spec:
               memory: 64Mi
             limits:
               memory: 256Mi
+        - name: exporter
+          # redis_exporter is Valkey-compatible (quay — not Docker Hub).
+          image: quay.io/oliver006/redis_exporter:v1.86.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: metrics
+              containerPort: 9121
+          env:
+            - name: REDIS_ADDR
+              value: redis://localhost:6379
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: metrics
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
       volumes:
         - name: data
           persistentVolumeClaim:
@@ -78,3 +100,6 @@ spec:
     - name: redis
       port: 6379
       targetPort: redis
+    - name: metrics
+      port: 9121
+      targetPort: metrics

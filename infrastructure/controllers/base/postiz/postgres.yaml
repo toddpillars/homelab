@@ -83,6 +83,36 @@ spec:
               memory: 128Mi
             limits:
               memory: 512Mi
+        - name: exporter
+          # Prometheus postgres_exporter (quay — not Docker Hub). Connects to the
+          # primary over localhost; credentials from the shared postgres secret.
+          image: quay.io/prometheuscommunity/postgres-exporter:v0.20.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: metrics
+              containerPort: 9187
+          env:
+            - name: DATA_SOURCE_URI
+              value: localhost:5432/postiz?sslmode=disable
+            - name: DATA_SOURCE_USER
+              value: postiz
+            - name: DATA_SOURCE_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: postiz-postgres
+                  key: POSTGRES_PASSWORD
+          readinessProbe:
+            httpGet:
+              path: /
+              port: metrics
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
       volumes:
         - name: data
           persistentVolumeClaim:
@@ -106,3 +136,6 @@ spec:
     - name: postgres
       port: 5432
       targetPort: postgres
+    - name: metrics
+      port: 9187
+      targetPort: metrics
