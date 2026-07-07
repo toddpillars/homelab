@@ -1,0 +1,15 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: postiz-tls
+  namespace: postiz
+spec:
+  # cert-manager writes the issued cert/key into this secret, referenced by the
+  # ingress TLS block. Issued via Let's Encrypt using Cloudflare DNS-01, so it
+  # works even though postiz.toddpillars.com only resolves on the LAN.
+  secretName: postiz-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+    - postiz.toddpillars.com
