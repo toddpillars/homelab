@@ -9,6 +9,7 @@ resources:
   - temporal.yaml
   - temporal-ui.yaml
   - pvc.yaml
+  - certificate.yaml
   - release.yaml
 # NOTE: ./chart is deliberately NOT a kustomize resource — it is a Helm chart
 # consumed by release.yaml via the flux-system GitRepository source.
