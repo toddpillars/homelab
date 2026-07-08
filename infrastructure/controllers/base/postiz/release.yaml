@@ -23,6 +23,18 @@ spec:
   values:
     fullnameOverride: postiz-app
 
+    # The single container runs several Node/PM2 processes (frontend, backend,
+    # workers, cron), so steady memory sits around ~2.4Gi. Requests reserve a
+    # realistic baseline for the scheduler; limits are set comfortably above the
+    # observed idle so a runaway can't starve the node without killing normal use.
+    resources:
+      requests:
+        cpu: 250m
+        memory: 2Gi
+      limits:
+        cpu: "1"
+        memory: 4Gi
+
     image:
       repository: ghcr.io/gitroomhq/postiz-app
       # PINNED: the LinkedIn scope patch below (command/args) targets the provider
