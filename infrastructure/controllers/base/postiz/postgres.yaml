@@ -45,7 +45,12 @@ spec:
     spec:
       containers:
         - name: postgres
-          image: public.ecr.aws/docker/library/postgres:18-alpine
+          # PINNED to major 16: the PVC data directory was initialized by PG16 and
+          # Postgres refuses to start against it under a newer major (PG18 failed
+          # with "database files are incompatible"). A major upgrade needs an
+          # explicit pg_upgrade / dump-restore, not an in-place image bump. Renovate
+          # is constrained to patch/minor for this image (see renovate.json).
+          image: public.ecr.aws/docker/library/postgres:16-alpine
           imagePullPolicy: IfNotPresent
           ports:
             - name: postgres
