@@ -86,7 +86,7 @@ spec:
         - name: exporter
           # Prometheus postgres_exporter (quay — not Docker Hub). Connects to the
           # primary over localhost; credentials from the shared postgres secret.
-          image: quay.io/prometheuscommunity/postgres-exporter:v0.20.0
+          image: quay.io/prometheuscommunity/postgres-exporter:v0.20.1
           imagePullPolicy: IfNotPresent
           ports:
             - name: metrics
