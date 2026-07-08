@@ -28,6 +28,13 @@
       "description": "Group all Postiz-stack image updates into a single PR",
       "matchFileNames": ["infrastructure/controllers/base/postiz/**"],
       "groupName": "postiz-stack"
+    },
+    {
+      "description": "Never propose Postgres major bumps: a major upgrade requires an in-place data migration (pg_upgrade / dump-restore), which a tag change cannot do. Patch/minor only; majors are handled manually.",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["public.ecr.aws/docker/library/postgres"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
     }
   ]
 }
