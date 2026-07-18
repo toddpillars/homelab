@@ -19,7 +19,7 @@ spec:
         - name: temporal-ui
           # Temporal's operational console — connects to the frontend gRPC and
           # lets you inspect/retry the workflows Postiz schedules.
-          image: docker.io/temporalio/ui:2.52.0
+          image: docker.io/temporalio/ui:2.52.1
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
