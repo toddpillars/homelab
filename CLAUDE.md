@@ -93,6 +93,10 @@ kubectl describe pod -n <ns> <pod>        # debug pod issues
 
 ### Restore Data to a PVC
 ```bash
+./scripts/restore-cluster.sh <backup-directory>   # restores linkding, mealie, audiobookshelf, n8n from a backup-cluster.sh output dir
+```
+For an app not covered by the script, restore manually:
+```bash
 kubectl scale deployment <app> -n <ns> --replicas=0
 # create a restore pod mounting the PVC, copy data in, delete pod
 kubectl scale deployment <app> -n <ns> --replicas=1
