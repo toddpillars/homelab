@@ -47,7 +47,7 @@ spec:
               memory: 256Mi
         - name: exporter
           # redis_exporter is Valkey-compatible (quay — not Docker Hub).
-          image: quay.io/oliver006/redis_exporter:v1.87.0
+          image: quay.io/oliver006/redis_exporter:v1.88.0
           imagePullPolicy: IfNotPresent
           ports:
             - name: metrics
