@@ -4,10 +4,19 @@ metadata:
   name: cloudflared
   namespace: cloudflared
 data:
+  # IMPORTANT: This tunnel is DASHBOARD-managed. The authoritative ingress lives
+  # in the Cloudflare Zero Trust dashboard under the tunnel's "Published
+  # application routes" tab, and cloudflared pulls it from the edge (logs
+  # "Updated to new configuration version=N"). The `ingress:` block below is
+  # therefore NOT used at runtime — it is a hand-maintained mirror for
+  # documentation/readability only. To actually add or change a route, edit the
+  # Published application routes in the dashboard; editing this file alone has
+  # NO effect on routing. Keep the two in sync if you touch either.
   config.yaml: |
     tunnel: f7897851-6b1b-48af-9490-7739f9f17863
     credentials-file: /etc/cloudflared/credentials.json
 
+    # NOTE: mirror-only — see the comment above. Dashboard is authoritative.
     ingress:
       - hostname: toddpillars.com
         service: http://blog.blog.svc.cluster.local:80
