@@ -5,8 +5,18 @@ metadata:
   namespace: audiobookshelf  # adjust to your namespace
   annotations:
     traefik.ingress.kubernetes.io/router.middlewares: audiobookshelf-large-upload@kubernetescrd
+    # ingress-shim: cert-manager auto-creates a Certificate (into absi-tls) for
+    # the tls hosts below, issued via Let's Encrypt Cloudflare DNS-01 so it
+    # works even though absi.toddpillars.com only resolves on the LAN. The
+    # annotation keeps the cert-manager CRD out of the apps/ Kustomization,
+    # which reconciles before infrastructure/ (where cert-manager lives).
+    cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
   ingressClassName: traefik
+  tls:
+    - hosts:
+        - absi.toddpillars.com
+      secretName: absi-tls
   rules:
     - host: absi.toddpillars.com  # or whatever local hostname you want
       http:
