@@ -13,3 +13,18 @@ spec:
     kind: ClusterIssuer
   dnsNames:
     - postiz.toddpillars.com
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: temporal-tls
+  namespace: postiz
+spec:
+  # Trusted cert for the LAN-only Temporal operational console, issued the same
+  # way as postiz-tls (Let's Encrypt via Cloudflare DNS-01).
+  secretName: temporal-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+    - temporal.toddpillars.com

@@ -33,6 +33,12 @@ metadata:
   namespace: postiz
 spec:
   ingressClassName: traefik
+  tls:
+    # Trusted Let's Encrypt cert (issued via Cloudflare DNS-01, see
+    # base/postiz/certificate.yaml → temporal-tls).
+    - hosts:
+        - temporal.toddpillars.com
+      secretName: temporal-tls
   rules:
     # LAN-only Temporal operational console. Also kept out of the cloudflared
     # tunnel — internal debugging UI, never exposed externally.

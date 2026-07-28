@@ -3,8 +3,19 @@ kind: Ingress
 metadata:
   name: homepage
   namespace: homepage
+  annotations:
+    # ingress-shim: cert-manager auto-creates a Certificate (into homepage-tls)
+    # for the tls hosts below, issued via Let's Encrypt Cloudflare DNS-01 so it
+    # works even though hms.toddpillars.com only resolves on the LAN. The
+    # annotation keeps the cert-manager CRD out of the apps/ Kustomization,
+    # which reconciles before infrastructure/ (where cert-manager lives).
+    cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
   ingressClassName: traefik
+  tls:
+    - hosts:
+        - hms.toddpillars.com
+      secretName: homepage-tls
   rules:
     - host: hms.toddpillars.com
       http:
