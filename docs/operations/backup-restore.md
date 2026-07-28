@@ -16,6 +16,9 @@ This guide covers backing up and restoring data from Kubernetes persistent volum
 | Audiobookshelf | audiobookshelf | audiobookshelf-metadata | /metadata | Book metadata/covers |
 | Audiobookshelf | audiobookshelf | audiobookshelf-audiobooks | /audiobooks | Audio files (large — see note) |
 | n8n | naten | n8n-data | /home/node/.n8n | Workflows + credentials |
+| open-webui | open-webui | open-webui | /app/backend/data | Chat history + config (SQLite) |
+
+> **open-webui** is a StatefulSet (pod `open-webui-0`), so restore scales the StatefulSet rather than a Deployment. Its Redis and pipelines PVCs are caches/derived and are not backed up.
 
 > **Audiobookshelf audiobooks:** The `/audiobooks` PVC is intentionally excluded from the automated backup script because it can hold large media files. Back it up separately via NAS sync, rsync, or another media-aware tool on its own schedule.
 
@@ -42,6 +45,7 @@ Output goes to `./backups/YYYYMMDD-HHMMSS/`. What it produces:
 | `mealie-data.tar.gz` | /app/data |
 | `audiobookshelf-data.tar.gz` | /config + /metadata (no audiobooks) |
 | `n8n-data.tar.gz` | /home/node/.n8n |
+| `open-webui-data.tar.gz` | /app/backend/data |
 | `*-deployment.yaml` | Deployment spec for each app |
 | `*-pvc.yaml` | PVC spec(s) for each app |
 | `flux-gitrepo.yaml` | Flux GitRepository resources |

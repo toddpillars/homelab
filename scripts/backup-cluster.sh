@@ -57,6 +57,8 @@ backup_app linkding       linkding       "app=linkding"       /etc/linkding/data
 backup_app mealie         mealie         ""                    /app/data
 backup_app audiobookshelf audiobookshelf "app=audiobookshelf" /config /metadata
 backup_app n8n            naten          "app=n8n"            /home/node/.n8n
+# open-webui is a StatefulSet (pod open-webui-0); restore scales the StatefulSet.
+backup_app open-webui     open-webui     "app.kubernetes.io/component=open-webui" /app/backend/data
 
 # Backup Flux state
 echo "📦 Backing up Flux configuration..."

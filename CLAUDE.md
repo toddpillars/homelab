@@ -121,7 +121,7 @@ kubectl scale deployment <app> -n <ns> --replicas=1
 | kube-prometheus-stack | monitoring | HelmRelease | Prometheus + Grafana + Alertmanager |
 | Loki | monitoring | HelmRelease | Log aggregation; Grafana datasource configured |
 
-External vLLM instance at `192.168.0.74:8000` is monitored via a headless Service + Endpoints + ServiceMonitor in the `monitoring` namespace.
+An external vLLM instance on the LAN is monitored via a headless Service + Endpoints + ServiceMonitor in the `monitoring` namespace (the target address lives in those manifests).
 
 ## Adding a New Application
 
