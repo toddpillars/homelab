@@ -2,4 +2,6 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
   - ../../base/open-webui
-  - ingress.yaml
+# No Traefik ingress: open-webui is exposed to the internet purely through the
+# cloudflared tunnel (ais.toddpillars.com), the same way as n8n. See the
+# cloudflared ConfigMap.
