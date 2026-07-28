@@ -23,6 +23,7 @@ restore_app() {
   local namespace="$2"
   local pvc_name="$3"
   local mount_path="$4"
+  local kind="${5:-deployment}"   # workload kind to scale (deployment | statefulset)
   local archive="$BACKUP_DIR/${app}-data.tar.gz"
 
   if [ ! -f "$archive" ]; then
@@ -32,8 +33,8 @@ restore_app() {
 
   echo "📦 Restoring $app..."
 
-  kubectl scale deployment "$app" -n "$namespace" --replicas=0
-  kubectl wait --for=jsonpath='{.spec.replicas}'=0 deployment/"$app" -n "$namespace" --timeout=60s 2>/dev/null || sleep 10
+  kubectl scale "$kind" "$app" -n "$namespace" --replicas=0
+  kubectl wait --for=jsonpath='{.spec.replicas}'=0 "$kind"/"$app" -n "$namespace" --timeout=60s 2>/dev/null || sleep 10
 
   kubectl apply -f - <<YAML
 apiVersion: v1
@@ -62,7 +63,7 @@ YAML
 
   kubectl delete pod restore-pod -n "$namespace"
 
-  kubectl scale deployment "$app" -n "$namespace" --replicas=1
+  kubectl scale "$kind" "$app" -n "$namespace" --replicas=1
 
   echo "✅ $app restored"
 }
@@ -125,6 +126,7 @@ restore_app "linkding" "linkding" "linkding-data-pvc" "/etc/linkding/data"
 restore_app "mealie" "mealie" "mealie-data" "/app/data"
 restore_abs_app
 restore_app "n8n" "naten" "n8n-data" "/home/node/.n8n"
+restore_app "open-webui" "open-webui" "open-webui" "/app/backend/data" "statefulset"
 
 echo ""
 echo "✅ Restore complete!"
@@ -134,3 +136,4 @@ echo "  kubectl logs -n linkding deployment/linkding"
 echo "  kubectl logs -n mealie deployment/mealie"
 echo "  kubectl logs -n audiobookshelf deployment/audiobookshelf"
 echo "  kubectl logs -n naten deployment/n8n"
+echo "  kubectl logs -n open-webui statefulset/open-webui"
