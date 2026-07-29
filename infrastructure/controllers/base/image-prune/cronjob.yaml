@@ -1,0 +1,49 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: image-prune
+  namespace: image-prune
+spec:
+  # 03:30 on the 1st of every month. Reclaims orphaned container image layers
+  # on the node: every Renovate image bump pulls a new image and containerd
+  # keeps the old ones, but k3s only garbage-collects images under ~85% disk
+  # pressure — so on a healthy node they accumulate indefinitely and become the
+  # dominant disk consumer. `crictl rmi --prune` removes only images NOT used by
+  # a running container, so it is safe. See docs/operations/backup-restore.md.
+  schedule: "30 3 1 * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: image-prune
+              # k3s image ships the `crictl` multi-call binary; talks to the
+              # node's containerd over the mounted socket.
+              image: rancher/k3s:v1.34.3-k3s1
+              securityContext:
+                privileged: true
+              env:
+                - name: CRI_CONFIG_FILE
+                  value: /dev/null
+                - name: CONTAINER_RUNTIME_ENDPOINT
+                  value: unix:///run/k3s/containerd/containerd.sock
+              command: ["sh", "-c"]
+              # NOTE: --timeout is a GLOBAL crictl flag and MUST precede `rmi`.
+              # crictl's default request timeout is 2s — far too short to delete
+              # large layers, which then fail with `DeadlineExceeded`. 10m gives
+              # each removal room; --prune only touches unused images.
+              args:
+                - crictl --timeout=10m rmi --prune
+              volumeMounts:
+                - name: containerd-sock
+                  mountPath: /run/k3s/containerd/containerd.sock
+          volumes:
+            - name: containerd-sock
+              hostPath:
+                path: /run/k3s/containerd/containerd.sock
+                type: Socket

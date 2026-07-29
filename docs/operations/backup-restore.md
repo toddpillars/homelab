@@ -29,6 +29,32 @@ This guide covers backing up and restoring data from Kubernetes persistent volum
 
 **GitOps saves us here!** All configuration is in Git. We only need to backup the **data volumes**.
 
+## Monthly Node Maintenance: Container Image Prune
+
+Separate from data backup, the node's containerd image cache needs periodic
+pruning. Every Renovate image bump pulls a new image and containerd keeps the
+old layers; k3s only garbage-collects them under ~85% disk pressure, so on a
+healthy node they accumulate and become the **dominant disk consumer** (a prune
+on 2026-07-28 reclaimed ~82 GB, dropping the root FS from 75% to 42%).
+
+This is automated by the **`image-prune` CronJob** (`infrastructure/controllers/base/image-prune/`),
+which runs `crictl rmi --prune` on the node at 03:30 on the 1st of each month.
+`--prune` only removes images not used by a running container, so it is safe.
+
+To run it on demand instead of waiting for the schedule:
+
+```bash
+kubectl create job -n image-prune --from=cronjob/image-prune image-prune-manual
+kubectl logs -n image-prune job/image-prune-manual -f
+```
+
+To prune directly on the node (note: `--timeout` is a **global** flag before
+`rmi`; crictl's 2s default is too short and fails with `DeadlineExceeded`):
+
+```bash
+sudo k3s crictl --timeout=10m rmi --prune
+```
+
 ## Automated Backup Script
 
 `scripts/backup-cluster.sh` backs up all stateful apps, the Flux configuration state, and the SOPS AGE key.
