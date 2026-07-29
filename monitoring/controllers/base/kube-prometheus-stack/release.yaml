@@ -26,6 +26,22 @@ spec:
         target:
           kind: PrometheusRule
   values:
+    prometheus:
+      prometheusSpec:
+        # Persist the TSDB on a PVC instead of the default emptyDir, so metrics
+        # history survives pod reschedules/restarts. retentionSize is kept below
+        # the PVC size so Prometheus trims old data before the volume fills.
+        retention: 15d
+        retentionSize: 15GiB
+        storageSpec:
+          volumeClaimTemplate:
+            spec:
+              storageClassName: local-path
+              accessModes:
+                - ReadWriteOnce
+              resources:
+                requests:
+                  storage: 20Gi
     grafana:
       admin:
         existingSecret: grafana-admin-credentials
