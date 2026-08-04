@@ -19,6 +19,37 @@ The environment currently supports n8n automation, Open WebUI, local
 llama.cpp inference, and the monitoring foundation for AI agents and
 retrieval-grounded knowledge systems.
 
+## Current workloads
+
+Two apps and one monitoring pattern make up the AI-facing surface of this
+cluster today, with more planned:
+
+- **n8n** — the workflow/automation layer, exposed through the tunnel, with
+  its own Prometheus metrics enabled and execution history pruned on a
+  rolling window so state doesn't grow unbounded.
+- **open-webui** — the chat interface. It deliberately runs no inference
+  itself; it's configured to call out to a LAN-hosted llama.cpp instance. That
+  split keeps GPU-bound inference compute off the Kubernetes node entirely
+  and treats "chat UI" and "model serving" as separate concerns with
+  separate scaling and hardware requirements.
+- **Bridging non-Kubernetes inference servers into Prometheus.** LAN-hosted
+  llama.cpp inference servers (running outside the cluster, on bare metal)
+  are scraped using the same `ServiceMonitor`
+  contract as every in-cluster workload — a headless `Service` paired with a
+  hand-authored `Endpoints` object stands in for kube-proxy's usual
+  service-discovery, so a process that was never scheduled by Kubernetes
+  still shows up in the same Grafana dashboards as everything that was. One
+  monitoring integration point regardless of where the workload actually
+  runs.
+
+**Roadmap:** the next phase of this stack is a self-hosted AI platform
+layer — vector storage, local search, workflow orchestration, and LLM
+observability/tracing — designed to sit alongside n8n and open-webui rather
+than replace them. This is in-progress design work, not yet running in the
+cluster, and is called out here as direction rather than a shipped feature.
+
+## Architecture diagram
+
 ```mermaid
 flowchart LR
     GitHub[GitHub Repository] --> Flux[FluxCD]
@@ -35,21 +66,19 @@ flowchart LR
     Obs --> Llama
 ```
 
-## Architecture & design decisions
+## Engineering decisions
 
 A GitOps-managed Kubernetes cluster, reconciled continuously by **FluxCD**
 from this repository. Everything — workloads, ingress, TLS, secrets,
 monitoring, and the dependency ordering between them — is declarative YAML
 under version control. There's a single environment, `staging`, run with the
-same discipline you'd expect from a production-grade system: encrypted 
-secrets, tested backup/restore, and a controlled upgrade path rather than ad 
+same discipline you'd expect from a production-like system: encrypted
+secrets, tested backup/restore, and a controlled upgrade path rather than ad
 hoc `kubectl apply`.
 
-This README covers the architecture, the tradeoffs behind it, the AI/LLM
-stack running on top of it, and how backup, observability, and upgrades are
-handled. For the full inventory of running applications and day-to-day
-operational commands, see [`CLAUDE.md`](CLAUDE.md). For deep-dive runbooks,
-see [`docs/operations/`](docs/operations/).
+For the full inventory of running applications and day-to-day operational
+commands, see [`CLAUDE.md`](CLAUDE.md). For deep-dive runbooks, see
+[`docs/operations/`](docs/operations/).
 
 ### Dependency and TLS design
 
@@ -98,36 +127,9 @@ in the cluster sourced that way.
 See [Postiz Deployment & Operations](docs/operations/postiz.md) for the full
 story.
 
-## AI / LLM stack
+## Operations & reliability
 
-Two apps and one monitoring pattern make up the AI-facing surface of this
-cluster today, with more planned:
-
-- **n8n** — the workflow/automation layer, exposed through the tunnel, with
-  its own Prometheus metrics enabled and execution history pruned on a
-  rolling window so state doesn't grow unbounded.
-- **open-webui** — the chat interface. It deliberately runs no inference
-  itself; it's configured to call out to a LAN-hosted llama.cpp instance. That
-  split keeps GPU-bound inference compute off the Kubernetes node entirely
-  and treats "chat UI" and "model serving" as separate concerns with
-  separate scaling and hardware requirements.
-- **Bridging non-Kubernetes inference servers into Prometheus.** LAN-hosted
-  llama.cpp inference servers (running outside the cluster, on bare metal)
-  are scraped using the same `ServiceMonitor`
-  contract as every in-cluster workload — a headless `Service` paired with a
-  hand-authored `Endpoints` object stands in for kube-proxy's usual
-  service-discovery, so a process that was never scheduled by Kubernetes
-  still shows up in the same Grafana dashboards as everything that was. One
-  monitoring integration point regardless of where the workload actually
-  runs.
-
-**Roadmap:** the next phase of this stack is a self-hosted AI platform
-layer — vector storage, local search, workflow orchestration, and LLM
-observability/tracing — designed to sit alongside n8n and open-webui rather
-than replace them. This is in-progress design work, not yet running in the
-cluster, and is called out here as direction rather than a shipped feature.
-
-## Observability stack
+### Observability
 
 - **kube-prometheus-stack** (Prometheus + Alertmanager + Grafana) is the
   metrics backbone. Prometheus's TSDB is backed by a PVC rather than the
@@ -152,7 +154,7 @@ cluster, and is called out here as direction rather than a shipped feature.
   directly with the Prometheus Operator's CRDs (`ServiceMonitor`,
   `PrometheusRule`) rather than a vendor's abstraction over them.
 
-## Backup & restore
+### Backup & restore
 
 GitOps already backs up *configuration* — every Deployment, ConfigMap, and
 HelmRelease is reconstructable from `git clone` alone. Only stateful data on
@@ -165,11 +167,11 @@ data (media libraries, caches) is deliberately excluded from the routine
 path.
 
 See [Backup & Restore](docs/operations/backup-restore.md) for the full
-procedures, current recovery targets, and node image-pruning maintenance.
+procedures and current recovery targets.
 
-## Upgrade & migration path
+### Upgrades & dependency management
 
-### Dependency updates
+#### Dependency updates
 
 Renovate opens PRs for image tags, Helm chart versions, and Flux manifests,
 but nothing auto-merges — every change gets human review before it reaches
@@ -180,14 +182,14 @@ actually needs.
 
 See [Dependency & Upgrade Policy](docs/architecture/dependency-management.md).
 
-### Cluster upgrades
+#### Cluster upgrades
 
 Cluster upgrades step through intermediate minor versions rather than
 jumping straight to the target release, and are preceded by a datastore
 backup — in this cluster's case the k3s SQLite datastore (single control
 plane, no etcd), backed up as a directory copy rather than an etcd snapshot.
 
-### Horizontal growth
+#### Horizontal growth
 
 Every PVC in this cluster uses `local-path` storage, which binds data to
 whichever node created it, so adding a second node is a data-placement
@@ -237,7 +239,7 @@ docs/architecture/       Design-decision deep dives (TLS, dependency policy, sto
 docs/operations/         Runbooks: backup/restore, per-app deep dives
 ```
 
-## Further reading
+## Deep dives
 
 **Architecture:**
 - [Dependency and TLS Design](docs/architecture/dependency-tls.md) — Flux
