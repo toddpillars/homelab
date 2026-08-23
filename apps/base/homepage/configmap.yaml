@@ -36,9 +36,9 @@ data:
             href: http://192.168.0.75:9119
             description: VM
             ping: 192.168.0.75
-        - Docker Host:
-            href: http://192.168.0.77
-            description: Docker VM
+        - Portainer:
+            href: https://192.168.0.77:9443
+            description: Docker management
             ping: 192.168.0.77
   bookmarks.yaml: |
     []
