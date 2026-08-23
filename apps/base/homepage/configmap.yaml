@@ -27,6 +27,23 @@ data:
         - Open WebUI:
             href: https://webui.toddpillars.com
             description: LLM chat
+    - Infrastructure:
+        - Proxmox:
+            href: https://192.168.0.68:8006
+            description: Hypervisor
+            ping: 192.168.0.68
+        - llama.cpp:
+            href: http://192.168.0.74:8081
+            description: LLM inference server
+            ping: 192.168.0.74
+        - Hermes:
+            href: http://192.168.0.75
+            description: VM
+            ping: 192.168.0.75
+        - Docker Host:
+            href: http://192.168.0.77
+            description: Docker VM
+            ping: 192.168.0.77
   bookmarks.yaml: |
     []
   widgets.yaml: |
