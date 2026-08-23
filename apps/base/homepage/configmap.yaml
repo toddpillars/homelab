@@ -37,7 +37,7 @@ data:
             description: LLM inference server
             ping: 192.168.0.74
         - Hermes:
-            href: http://192.168.0.75
+            href: http://192.168.0.75:9119
             description: VM
             ping: 192.168.0.75
         - Docker Host:
