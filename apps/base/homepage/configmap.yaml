@@ -32,10 +32,6 @@ data:
             href: https://192.168.0.68:8006
             description: Hypervisor
             ping: 192.168.0.68
-        - llama.cpp:
-            href: http://192.168.0.74:8081
-            description: LLM inference server
-            ping: 192.168.0.74
         - Hermes:
             href: http://192.168.0.75:9119
             description: VM
