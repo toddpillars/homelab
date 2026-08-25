@@ -107,8 +107,6 @@ kubectl scale deployment <app> -n <ns> --replicas=1
 | App | Namespace | Type | Notes |
 |-----|-----------|------|-------|
 | audiobookshelf | audiobookshelf | Deployment | Audiobook server |
-| blog | blog | Deployment | Git-sourced blog; SSH key in `git-ssh-secret.enc.yaml` |
-| gulfside | gulfside | Deployment | Static site |
 | homepage | homepage | Deployment | Dashboard; stateless (config via ConfigMap + initContainer, restart on config change) |
 | linkding | linkding | Deployment | Bookmarks; superuser credentials in `linkding-secret.enc.yaml` |
 | mealie | mealie | Deployment | Recipe manager |
