@@ -40,7 +40,7 @@ spec:
       # PINNED: the LinkedIn scope patch below (command/args) targets the provider
       # file in this image. Re-verify the sed after any image bump — the scope
       # list or file path can change across Postiz versions.
-      tag: v2.21.10
+      tag: v2.23.0
 
     # LinkedIn scope patch: Postiz's personal-LinkedIn provider hard-requests
     # scopes we cannot grant — r_basicprofile (deprecated/ungrantable, superseded
