@@ -258,3 +258,6 @@ docs/operations/         Runbooks: backup/restore, per-app deep dives
   deployment writeup, including the vendored-chart story referenced above.
 - [`docs/operations/grafana-sops-credentials.md`](docs/operations/grafana-sops-credentials.md)
   — Grafana credential management via SOPS.
+- [`docs/operations/k3s-upgrade.md`](docs/operations/k3s-upgrade.md) — the
+  step-through-minors k3s server upgrade procedure, datastore backup, and
+  rollback.
