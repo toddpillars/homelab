@@ -21,6 +21,13 @@ metadata:
   labels:
     release: kube-prometheus-stack
 spec:
+  # Without this, Prometheus Operator defaults the `job` label to the
+  # discovered Service's name (garage-metrics) — but Garage's official
+  # Grafana dashboard (garage-dashboard.configmap.yaml) hardcodes
+  # job="garage" in every panel query. Point jobLabel at the Service's
+  # app.kubernetes.io/name label (value: "garage") so the scraped job
+  # matches what the dashboard expects, with no per-query edits needed.
+  jobLabel: app.kubernetes.io/name
   namespaceSelector:
     matchNames:
       - garage
