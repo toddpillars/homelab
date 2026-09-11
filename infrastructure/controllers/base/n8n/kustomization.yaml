@@ -6,5 +6,6 @@ namespace: naten
 resources:
   - namespace.yaml
   - storage.yaml
+  - n8n-garage-secret.enc.yaml
   - deployment.yaml
   - service.yaml
