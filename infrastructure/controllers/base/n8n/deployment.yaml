@@ -42,6 +42,13 @@ spec:
           value: "true"
         - name: EXECUTIONS_DATA_MAX_AGE
           value: "168"
+        envFrom:
+        # Garage S3 test credentials (bucket: n8n-test), for workflows to use
+        # via $env in a Code/HTTP Request node. Not wired into n8n's own
+        # binary-data storage backend — this is credentials-only, additive.
+        # See docs/operations/garage.md.
+        - secretRef:
+            name: n8n-garage-secret
         volumeMounts:
         - name: n8n-data
           mountPath: /home/node/.n8n
