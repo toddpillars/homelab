@@ -7,4 +7,5 @@ resources:
   - open-webui
   - n8n
   - postiz
+  - garage
   - image-prune

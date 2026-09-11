@@ -1,0 +1,18 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: garage
+  namespace: flux-system
+spec:
+  # Garage doesn't publish a hosted Helm repo index; its chart only lives
+  # in-tree in this upstream repo. Pinned to a release tag rather than a
+  # branch, so we don't need to vendor/edit a local copy (unlike postiz).
+  interval: 30m
+  url: https://git.deuxfleurs.fr/Deuxfleurs/garage
+  ref:
+    tag: v2.4.1
+  # The upstream repo is Garage's whole Rust monorepo; we only need the chart
+  # subtree. Keeps source-controller's artifact small on every 30m re-fetch.
+  ignore: |
+    /*
+    !/script/helm/garage

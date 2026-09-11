@@ -1,0 +1,34 @@
+# Scrape Garage's admin API metrics endpoint. Lives in the monitoring
+# namespace (carrying the release label Prometheus selects on) and reaches
+# across to the garage namespace via namespaceSelector — same pattern as the
+# Postiz stack's ServiceMonitors.
+#
+# `port: metrics` matches the chart's own templates/servicemonitor.yaml and
+# templates/service.yaml (confirmed against the chart source at v2.4.1): with
+# monitoring.metrics.enabled: true it renders a separate headless
+# `<fullname>-metrics` Service carrying that port name. We render our own
+# ServiceMonitor (instead of the chart's) only to attach the
+# release: kube-prometheus-stack label Prometheus selects on.
+#
+# VERIFY after first deploy: selector matchLabels assume the chart's standard
+# Helm selector labels (app.kubernetes.io/name+instance) — confirm with
+# `kubectl get svc -n garage --show-labels` and fix if they differ.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: garage
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+spec:
+  namespaceSelector:
+    matchNames:
+      - garage
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: garage
+      app.kubernetes.io/instance: garage
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 30s

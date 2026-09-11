@@ -1,0 +1,28 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: garage-s3
+  namespace: garage
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - s3.toddpillars.com
+      secretName: garage-tls
+  rules:
+    # LAN-only host (resolved by local DNS to the Traefik ingress). Not added
+    # to the cloudflared tunnel — S3 storage stays internal-only.
+    #
+    # VERIFY after first deploy: `service.name` is a guess at the chart's
+    # Helm-fullname-generated Service — confirm with
+    # `kubectl get svc -n garage` and fix if it differs.
+    - host: s3.toddpillars.com
+      http:
+        paths:
+          - backend:
+              service:
+                name: garage
+                port:
+                  number: 3900
+            path: /
+            pathType: Prefix
