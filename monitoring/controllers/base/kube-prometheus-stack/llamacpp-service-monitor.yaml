@@ -20,3 +20,11 @@ spec:
       path: /metrics
       interval: 15s
       scrapeTimeout: 10s
+      # The llama.cpp server enforces --api-key on /metrics (confirmed live:
+      # 401 "Invalid API Key" with no header, 200 with this token). Token in
+      # llamacpp-metrics-token.enc.yaml (SOPS/AGE).
+      authorization:
+        type: Bearer
+        credentials:
+          name: llamacpp-metrics-token
+          key: token
