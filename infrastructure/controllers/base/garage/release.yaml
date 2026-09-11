@@ -1,0 +1,57 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: garage
+  namespace: garage
+spec:
+  interval: 10m
+  chart:
+    spec:
+      # Sourced from Garage's own upstream git repo/tag, not a HelmRepository
+      # index (none exists) and not vendored in-tree (unlike postiz) — see
+      # base/garage/repository.yaml.
+      chart: ./script/helm/garage
+      sourceRef:
+        kind: GitRepository
+        name: garage
+        namespace: flux-system
+      interval: 10m
+  values:
+    # Single k3s node today, so there's no redundancy to be had from Garage's
+    # own replication — the chart's defaults (3 StatefulSet replicas,
+    # replicationFactor 3) are for multi-node clusters. Revisit if/when a
+    # second node joins (see docs/project memory on the AI-offload node).
+    garage:
+      replicationFactor: 1
+    deployment:
+      replicaCount: 1
+    persistence:
+      meta:
+        storageClass: local-path
+        size: 2Gi
+      data:
+        storageClass: local-path
+        size: 20Gi
+    ingress:
+      # We front the S3 API with our own Ingress + cert-manager Certificate
+      # (infrastructure/-tree pattern), not the chart's built-in ingress.
+      s3:
+        api:
+          enabled: false
+        web:
+          enabled: false
+    monitoring:
+      metrics:
+        enabled: true
+        serviceMonitor:
+          # We add our own ServiceMonitor in monitoring/ so it carries the
+          # `release: kube-prometheus-stack` label Prometheus selects on.
+          enabled: false
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        memory: 512Mi
+    # garage.rpcSecret is deliberately left unset: the chart auto-generates
+    # one and stores it in a Secret, so no SOPS-managed secret is needed.

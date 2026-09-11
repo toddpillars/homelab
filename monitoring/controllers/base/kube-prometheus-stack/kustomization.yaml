@@ -12,3 +12,4 @@ resources:
   - postiz-servicemonitors.yaml
   - postiz-dashboards.configmap.yaml
   - grafana-credentials.enc.yaml
+  - garage-servicemonitor.yaml
