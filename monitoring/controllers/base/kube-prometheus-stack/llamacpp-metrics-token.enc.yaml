@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Secret
+metadata:
+    name: llamacpp-metrics-token
+    namespace: monitoring
+type: Opaque
+stringData:
+    token: ENC[AES256_GCM,data:ln0iCoOls4qpvP+M0vS4sCTbeXP/xaeU3HYbnmkcBrVmP2VO/+aE7ZseFSkb8TVsrif5OzSvcgVJ32SwqCXaEQ==,iv:hBqDO5ql3AGTtAw7ZOu1EABLKQ9k1XJqUK05KdL3+RQ=,tag:vaBKemKzSjEbnS9/M9h/SA==,type:str]
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBlRGl5UGVvVzBsMTdSSEYr
+            RG15eHR2SEdUdkVxK25aODBDdUgzazZ2UkVFCkVXcHpCdzdZWWMyczhiNkdNcGRv
+            NTZPbUJjdEZvTkhnVjFqanMxNUkzdGMKLS0tIHROU0M1MVJZb0lKekg4MlF2Q1U4
+            cndzditCcGlVem5yVUk2bXh3VDZIRXMKjjP5bjzd3G097oN8cvHgpXIct0tX5SnH
+            oPtvW+41ILKmjkV00MSU5UpKnc1B/PQ90eKQNd0j1gwU4hlAE1ZA+A==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age1vmka94kas8cez0jm80zyhyx9uahm4ldc5d2tm4yjltmqw2xckfaspauh3c
+    encrypted_regex: ^(data|stringData)$
+    lastmodified: "2026-09-11T18:25:58Z"
+    mac: ENC[AES256_GCM,data:b2ckLnWDYXXp5iSpNZyDw6kyKeB8CwQtsxoeMu6bSmnIkhyUPK9YOx/k1IltIwKeI7IRbQNRemxBhxIKN3yKyXX5iVNzWitPkTNZNBSAgKMd/lgydpOCHa79wVOiEOZO+3a45lWVIe1kSh+8mOV9j5lC3vulFS8ZitX3Mpa7a0k=,iv:CbyKMjXjSedzLX7M7FPbnNl7shEz8bvqghVaksrp9oo=,tag:X6Z2gxEw7NKdnlIzbskuAg==,type:str]
+    version: 3.13.3

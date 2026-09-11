@@ -9,6 +9,8 @@ resources:
   - loki-datasource.yaml
   - llamacpp-external-service.yaml
   - llamacpp-service-monitor.yaml
+  - llamacpp-metrics-token.enc.yaml
+  - llamacpp-dashboard.configmap.yaml
   - postiz-servicemonitors.yaml
   - postiz-dashboards.configmap.yaml
   - grafana-credentials.enc.yaml

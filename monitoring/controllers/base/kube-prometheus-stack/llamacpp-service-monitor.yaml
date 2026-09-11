@@ -6,6 +6,12 @@ metadata:
   labels:
     release: kube-prometheus-stack
 spec:
+  # Without this, Prometheus Operator defaults the `job` label to the
+  # discovered Service's name (llamacpp-external) — pointing it at the
+  # Service's `app` label (value: "llamacpp") instead keeps the scraped
+  # job name matching this ServiceMonitor's own name, and matching what
+  # llamacpp-dashboard.configmap.yaml's panel queries filter on.
+  jobLabel: app
   selector:
     matchLabels:
       app: llamacpp
@@ -14,3 +20,11 @@ spec:
       path: /metrics
       interval: 15s
       scrapeTimeout: 10s
+      # The llama.cpp server enforces --api-key on /metrics (confirmed live:
+      # 401 "Invalid API Key" with no header, 200 with this token). Token in
+      # llamacpp-metrics-token.enc.yaml (SOPS/AGE).
+      authorization:
+        type: Bearer
+        credentials:
+          name: llamacpp-metrics-token
+          key: token
