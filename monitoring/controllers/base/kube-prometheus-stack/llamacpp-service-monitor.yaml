@@ -6,6 +6,12 @@ metadata:
   labels:
     release: kube-prometheus-stack
 spec:
+  # Without this, Prometheus Operator defaults the `job` label to the
+  # discovered Service's name (llamacpp-external) — pointing it at the
+  # Service's `app` label (value: "llamacpp") instead keeps the scraped
+  # job name matching this ServiceMonitor's own name, and matching what
+  # llamacpp-dashboard.configmap.yaml's panel queries filter on.
+  jobLabel: app
   selector:
     matchLabels:
       app: llamacpp
