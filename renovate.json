@@ -35,6 +35,12 @@
       "matchPackageNames": ["public.ecr.aws/docker/library/postgres"],
       "matchUpdateTypes": ["major"],
       "enabled": false
+    },
+    {
+      "description": "Delay rancher/k3s image bumps (used only for crictl in the image-prune CronJob) until a tag has been out long enough to be past k3s pre-release/RC churn",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["rancher/k3s"],
+      "minimumReleaseAge": "21 days"
     }
   ]
 }
