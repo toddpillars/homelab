@@ -1,0 +1,34 @@
+# Flux source for this repository. Copy into homelab's clusters/staging/ and push.
+#
+# AUTH: the `flux-system` secret in flux-system holds the deploy key for the
+# homelab repo, and a GitHub deploy key is scoped to one repository — it will not
+# read this one. So this source needs its own credential:
+#
+#   1. flux create secret git inspect-integration-auth \
+#        --url=ssh://git@github.com/toddpillars/inspect-integration \
+#        --namespace=flux-system --export > /tmp/inspect-integration-auth.yaml
+#      (prints the generated public key; `--export` keeps it out of the cluster)
+#   2. Add that public key as a read-only deploy key on the GitHub repo.
+#   3. SOPS-encrypt /tmp/inspect-integration-auth.yaml into homelab and reference
+#      it here, or apply it once by hand if you would rather not commit it.
+#
+# If the repository is public, delete `secretRef` and use the https URL instead:
+#   url: https://github.com/toddpillars/inspect-integration
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: inspect-integration
+  namespace: flux-system
+spec:
+  interval: 1m0s
+  timeout: 60s
+  url: ssh://git@github.com/toddpillars/inspect-integration
+  ref:
+    branch: main
+  secretRef:
+    name: inspect-integration-auth
+  # Only the deploy tree matters to Flux; ignore the rest so a code-only commit
+  # doesn't churn the artifact.
+  ignore: |
+    /*
+    !/deploy

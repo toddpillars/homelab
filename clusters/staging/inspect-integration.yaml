@@ -1,0 +1,34 @@
+# Applies deploy/staging from the inspect-integration repository.
+# Copy into homelab's clusters/staging/ and push.
+#
+# Decryption uses the same `sops-age` secret the other Kustomizations use, and
+# this repo's .sops.yaml encrypts to the same AGE recipient, so the secrets in
+# deploy/base/*.enc.yaml decrypt without any further setup.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: inspect-integration
+  namespace: flux-system
+spec:
+  interval: 1m0s
+  retryInterval: 1m
+  timeout: 5m
+  sourceRef:
+    kind: GitRepository
+    name: inspect-integration
+  path: ./deploy/staging
+  prune: true
+  wait: true
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
+  healthChecks:
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: findings-postgres
+      namespace: inspect-integration
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: inspect-integration
+      namespace: inspect-integration
