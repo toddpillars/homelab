@@ -30,5 +30,9 @@ spec:
       namespace: inspect-integration
     - apiVersion: apps/v1
       kind: Deployment
+      name: gis-mock
+      namespace: inspect-integration
+    - apiVersion: apps/v1
+      kind: Deployment
       name: inspect-integration
       namespace: inspect-integration
