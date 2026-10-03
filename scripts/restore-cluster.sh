@@ -59,7 +59,7 @@ YAML
 
   kubectl wait --for=condition=ready pod/restore-pod -n "$namespace" --timeout=60s
 
-  kubectl exec -n "$namespace" restore-pod -- tar xzf - -C / < "$archive"
+  kubectl exec -i -n "$namespace" restore-pod -- tar xzf - -C / < "$archive"
 
   kubectl delete pod restore-pod -n "$namespace"
 
@@ -111,7 +111,7 @@ YAML
 
   kubectl wait --for=condition=ready pod/restore-pod -n "$namespace" --timeout=60s
 
-  kubectl exec -n "$namespace" restore-pod -- tar xzf - -C / < "$archive"
+  kubectl exec -i -n "$namespace" restore-pod -- tar xzf - -C / < "$archive"
 
   kubectl delete pod restore-pod -n "$namespace"
 
@@ -121,12 +121,83 @@ YAML
   echo "ℹ️  NOTE: /audiobooks was not included in the backup and must be restored separately"
 }
 
+restore_garage() {
+  local namespace="garage"
+  local archive="$BACKUP_DIR/garage-data.tar.gz"
+
+  if [ ! -f "$archive" ]; then
+    echo "⚠️  No archive found for garage, skipping"
+    return
+  fi
+
+  echo "📦 Restoring garage (meta + data)..."
+
+  kubectl scale statefulset garage -n "$namespace" --replicas=0
+  kubectl wait --for=jsonpath='{.spec.replicas}'=0 statefulset/garage -n "$namespace" --timeout=60s 2>/dev/null || sleep 10
+
+  kubectl apply -f - <<YAML
+apiVersion: v1
+kind: Pod
+metadata:
+  name: restore-pod
+  namespace: ${namespace}
+spec:
+  containers:
+  - name: restore
+    image: busybox:latest
+    command: ["sleep", "3600"]
+    volumeMounts:
+    - name: meta
+      mountPath: /mnt/meta
+    - name: data
+      mountPath: /mnt/data
+  volumes:
+  - name: meta
+    persistentVolumeClaim:
+      claimName: meta-garage-0
+  - name: data
+    persistentVolumeClaim:
+      claimName: data-garage-0
+  restartPolicy: Never
+YAML
+
+  kubectl wait --for=condition=ready pod/restore-pod -n "$namespace" --timeout=60s
+
+  # Drop any existing live DB so it can't be mixed with the restored one. Data
+  # blocks are content-addressed, so leftover blocks are harmless and kept.
+  kubectl exec -n "$namespace" restore-pod -- sh -c 'rm -rf /mnt/meta/db.lmdb*'
+
+  kubectl exec -i -n "$namespace" restore-pod -- tar xzf - -C /mnt < "$archive"
+
+  # The backup holds a consistent snapshot, not a live db.lmdb: promote the
+  # newest snapshot (ISO timestamps sort lexically) to be the live database.
+  kubectl exec -n "$namespace" restore-pod -- sh -c '
+    set -e
+    snap=$(ls -1 /mnt/meta/snapshots | sort | tail -n 1)
+    [ -n "$snap" ] || { echo "no snapshot in archive" >&2; exit 1; }
+    # Snapshots are a single LMDB file, but the live db.lmdb is a directory
+    # holding data.mdb — Garage fails to open a bare file at that path.
+    mkdir /mnt/meta/db.lmdb
+    cp -a "/mnt/meta/snapshots/$snap/db.lmdb" /mnt/meta/db.lmdb/data.mdb
+    chown -R 1000:1000 /mnt/meta/db.lmdb
+    echo "promoted snapshot $snap"
+  '
+
+  kubectl delete pod restore-pod -n "$namespace"
+
+  kubectl scale statefulset garage -n "$namespace" --replicas=1
+
+  echo "✅ garage restored"
+  echo "ℹ️  NOTE: verify with: kubectl exec -n garage garage-0 -- /garage status"
+}
+
 # Restore each app
 restore_app "linkding" "linkding" "linkding-data-pvc" "/etc/linkding/data"
 restore_app "mealie" "mealie" "mealie-data" "/app/data"
 restore_abs_app
 restore_app "n8n" "naten" "n8n-data" "/home/node/.n8n"
 restore_app "open-webui" "open-webui" "open-webui" "/app/backend/data" "statefulset"
+restore_garage
 
 echo ""
 echo "✅ Restore complete!"
@@ -137,3 +208,4 @@ echo "  kubectl logs -n mealie deployment/mealie"
 echo "  kubectl logs -n audiobookshelf deployment/audiobookshelf"
 echo "  kubectl logs -n naten deployment/n8n"
 echo "  kubectl logs -n open-webui statefulset/open-webui"
+echo "  kubectl exec -n garage garage-0 -- /garage status"
