@@ -17,8 +17,11 @@ This guide covers backing up and restoring data from Kubernetes persistent volum
 | Audiobookshelf | audiobookshelf | audiobookshelf-audiobooks | /audiobooks | Audio files (large — see note) |
 | n8n | naten | n8n-data | /home/node/.n8n | Workflows + credentials |
 | open-webui | open-webui | open-webui | /app/backend/data | Chat history + config (SQLite) |
+| Garage | garage | meta-garage-0, data-garage-0 | /mnt/meta, /mnt/data | S3 object data + LMDB metadata (see note) |
 
 > **open-webui** is a StatefulSet (pod `open-webui-0`), so restore scales the StatefulSet rather than a Deployment. Its Redis and pipelines PVCs are caches/derived and are not backed up.
+
+> **Garage** has a distroless image (no `tar`/`sh`), so it is backed up differently: the script runs `garage meta snapshot` for a consistent metadata copy, then tars both PVCs from a short-lived read-only busybox pod (live `meta/db.lmdb` is excluded). See [Garage backup and restore](garage.md#backup-and-restore). Postiz datastores, Loki, and Prometheus PVCs are not backed up.
 
 > **Audiobookshelf audiobooks:** The `/audiobooks` PVC is intentionally excluded from the automated backup script because it can hold large media files. Back it up separately via NAS sync, rsync, or another media-aware tool on its own schedule.
 
@@ -95,6 +98,8 @@ For each app it will:
 3. Stream the archive into the pod via `tar xzf`
 4. Delete the restore pod
 5. Scale the deployment back to 1
+
+Garage is handled by a dedicated `restore_garage` step (StatefulSet; promotes the newest metadata snapshot to the live database) — see [Garage backup and restore](garage.md#backup-and-restore).
 
 ## Pre-Migration Backup Checklist
 

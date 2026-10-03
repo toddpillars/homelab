@@ -67,6 +67,55 @@ Quick S3 API smoke test from a LAN machine with a key created above:
 aws s3 --endpoint-url https://s3.toddpillars.com ls
 ```
 
+## Backup and restore
+
+Garage is covered by `scripts/backup-cluster.sh` (`backup_garage`) and
+`scripts/restore-cluster.sh` (`restore_garage`). The image is distroless, so
+neither can `kubectl exec tar` into the Garage pod.
+
+**Backup** (`garage-data.tar.gz` in the backup directory):
+
+1. `garage meta snapshot` writes a consistent LMDB copy to
+   `meta/snapshots/<timestamp>/db.lmdb` (a single file). Copying the live
+   `meta/db.lmdb` while Garage runs is not safe, so it is excluded.
+2. A short-lived busybox pod, pinned to `garage-0`'s node (local-path PVCs are
+   node-bound), mounts `meta-garage-0` and `data-garage-0` read-only and tars
+   `meta` and `data`. The archive includes `cluster_layout` and `node_key`, so a
+   restored node keeps its identity and layout.
+3. The StatefulSet and PVC manifests are saved alongside.
+
+**Restore:** `./scripts/restore-cluster.sh <backup-dir>` scales the StatefulSet
+to 0, extracts the archive into the PVCs via a restore pod, then promotes the
+newest snapshot to the live database and scales back up. Existing
+`meta/db.lmdb*` is removed first; existing data blocks are kept (they are
+content-addressed, so leftovers are harmless).
+
+> **Gotcha — snapshot vs. live layout:** the snapshot is a single file, but
+> Garage expects `meta/db.lmdb/` to be a **directory** containing `data.mdb`
+> (a bare file there fails with "Unable to create LMDB data directory: File
+> exists"). The restore does `mkdir db.lmdb` and copies the snapshot in as
+> `data.mdb`. Do the same if restoring by hand.
+
+Verify after a restore:
+
+```bash
+kubectl exec -n garage garage-0 -- /garage status        # node ID matches the original
+kubectl exec -n garage garage-0 -- /garage bucket list
+kubectl exec -n garage garage-0 -- /garage stats         # object/version/block_ref counts
+kubectl exec -n garage garage-0 -- /garage block list-errors   # should be empty
+```
+
+**Testing a restore safely:** restore into a scratch namespace with throwaway
+`meta-garage-0`/`data-garage-0` PVCs, run a separate Garage pod on them with a
+config that has a fresh `rpc_secret` and no `[kubernetes_discovery]` block, and
+compare the status/stats output above against the live instance. Delete the
+namespace afterwards.
+
+**Open items:** it is not verified whether Garage prunes old
+`meta/snapshots` (each backup adds one; the meta PVC is only 2Gi, so watch it),
+and the StatefulSet scale-down/up inside the restore has not been exercised
+end to end.
+
 ## Grafana dashboard
 
 `monitoring/controllers/base/kube-prometheus-stack/garage-dashboard.configmap.yaml`
