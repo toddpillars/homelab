@@ -75,7 +75,8 @@ Output goes to `./backups/YYYYMMDD-HHMMSS/`. What it produces:
 | `audiobookshelf-data.tar.gz` | /config + /metadata (no audiobooks) |
 | `n8n-data.tar.gz` | /home/node/.n8n |
 | `open-webui-data.tar.gz` | /app/backend/data |
-| `*-deployment.yaml` | Deployment spec for each app |
+| `garage-data.tar.gz` | Metadata snapshot + `meta` files + `data` blocks (see [Garage](garage.md#backup-and-restore)) |
+| `*-deployment.yaml` | Deployment spec for each app (StatefulSets — open-webui, garage — have no Deployment; garage saves `garage-statefulset.yaml`) |
 | `*-pvc.yaml` | PVC spec(s) for each app |
 | `flux-gitrepo.yaml` | Flux GitRepository resources |
 | `flux-kustomizations.yaml` | Flux Kustomization resources |
