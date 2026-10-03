@@ -60,6 +60,74 @@ backup_app n8n            naten          "app=n8n"            /home/node/.n8n
 # open-webui is a StatefulSet (pod open-webui-0); restore scales the StatefulSet.
 backup_app open-webui     open-webui     "app.kubernetes.io/component=open-webui" /app/backend/data
 
+# Garage's image is distroless (no tar/sh), so backup_app's `kubectl exec tar`
+# can't work. Instead: take a consistent LMDB snapshot with `garage meta
+# snapshot`, then tar the PVCs from a short-lived busybox pod. The pod pins to
+# garage-0's node (local-path PVCs are node-bound) and mounts both PVCs
+# read-only. The live meta/db.lmdb is excluded (inconsistent while Garage runs);
+# meta/snapshots/ plus cluster_layout/node_key (needed to rejoin) are kept.
+backup_garage() {
+  local ns="garage" pod="garage-0" helper="garage-backup-$$"
+  local archive="$BACKUP_DIR/garage-data.tar.gz"
+
+  echo "📦 Backing up garage (meta snapshot + data)..."
+  kubectl get statefulset -n "$ns" garage -o yaml > "$BACKUP_DIR/garage-statefulset.yaml" 2>/dev/null \
+    || echo "⚠️  No statefulset for garage"
+  kubectl get pvc -n "$ns" -o yaml > "$BACKUP_DIR/garage-pvc.yaml" 2>/dev/null \
+    || echo "⚠️  No PVC for garage"
+
+  local node
+  node=$(kubectl get pod -n "$ns" "$pod" -o jsonpath='{.spec.nodeName}' 2>/dev/null || true)
+  if [ -z "$node" ]; then
+    echo "❌ No ${pod} pod found — garage data NOT backed up"
+    FAILURES=$((FAILURES + 1))
+    return
+  fi
+
+  if ! kubectl exec -n "$ns" "$pod" -c garage -- /garage meta snapshot >/dev/null 2>&1; then
+    echo "❌ garage meta snapshot failed — garage data NOT backed up"
+    FAILURES=$((FAILURES + 1))
+    return
+  fi
+
+  kubectl apply -n "$ns" -f - >/dev/null <<EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: ${helper}
+spec:
+  restartPolicy: Never
+  nodeName: ${node}
+  containers:
+  - name: tar
+    image: busybox:latest
+    command: ["sleep", "600"]
+    volumeMounts:
+    - {name: meta, mountPath: /mnt/meta, readOnly: true}
+    - {name: data, mountPath: /mnt/data, readOnly: true}
+  volumes:
+  - name: meta
+    persistentVolumeClaim: {claimName: meta-garage-0, readOnly: true}
+  - name: data
+    persistentVolumeClaim: {claimName: data-garage-0, readOnly: true}
+EOF
+
+  if kubectl wait -n "$ns" --for=condition=Ready "pod/${helper}" --timeout=120s >/dev/null 2>&1; then
+    kubectl exec -n "$ns" "$helper" -- tar czf - --exclude=meta/db.lmdb -C /mnt meta data > "$archive" 2>/dev/null || true
+  fi
+  kubectl delete pod -n "$ns" "$helper" --now --wait=false >/dev/null 2>&1 || true
+
+  if [ ! -s "$archive" ] || ! tar tzf "$archive" >/dev/null 2>&1; then
+    echo "❌ garage backup is empty or corrupt ($archive)"
+    FAILURES=$((FAILURES + 1))
+    return
+  fi
+
+  echo "✅ garage data backed up ($(du -h "$archive" | cut -f1))"
+}
+
+backup_garage
+
 # Backup Flux state
 echo "📦 Backing up Flux configuration..."
 kubectl get gitrepository -n flux-system -o yaml > "$BACKUP_DIR/flux-gitrepo.yaml"
