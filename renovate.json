@@ -41,6 +41,13 @@
       "matchDatasources": ["docker"],
       "matchPackageNames": ["rancher/k3s"],
       "minimumReleaseAge": "21 days"
+    },
+    {
+      "description": "Never bump Flux controller images on their own: gotk-components.yaml pins CRDs, RBAC and images together, so a lone image bump can outrun the CRDs and crash-loop the controller (notification-controller v1.10 needs v1 Provider/Alert CRDs). The fluxcd/flux2 bump regenerates the whole file and is the only supported path.",
+      "matchFileNames": ["clusters/**/flux-system/gotk-components.yaml"],
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["ghcr.io/fluxcd/**"],
+      "enabled": false
     }
   ]
 }
