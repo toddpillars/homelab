@@ -10,7 +10,7 @@ spec:
   interval: 30m
   url: https://git.deuxfleurs.fr/Deuxfleurs/garage
   ref:
-    tag: v2.4.1
+    tag: v2.5.0
   # The upstream repo is Garage's whole Rust monorepo; we only need the chart
   # subtree. Keeps source-controller's artifact small on every 30m re-fetch.
   ignore: |
